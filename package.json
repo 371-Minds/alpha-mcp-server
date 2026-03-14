@@ -1,11 +1,11 @@
 {
-  "name": "@gpu-bridge/mcp-server",
+  "name": "gpu-bridge-mcp-server",
   "version": "2.1.0",
   "description": "GPU-Bridge MCP Server — 30 AI services as MCP tools. LLM, image, video, audio, embeddings, reranking, PDF parsing, NSFW detection & more. x402 native for autonomous agents.",
   "type": "module",
   "main": "index.js",
   "bin": { "gpu-bridge-mcp": "index.js" },
-  "files": ["index.js", "README.md", "LICENSE"],
+  "files": ["index.js", "README.md", "LICENSE", "glama.json", "smithery.yaml"],
   "keywords": ["mcp", "ai", "gpu", "inference", "llm", "image-generation", "video", "audio", "embeddings", "reranking", "x402", "claude", "model-context-protocol"],
   "author": "GPU-Bridge <hello@gpubridge.xyz>",
   "license": "MIT",
