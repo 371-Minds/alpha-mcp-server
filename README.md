@@ -9,7 +9,7 @@
 
 ## What is GPU-Bridge?
 
-[GPU-Bridge](https://gpubridge.xyz) is a unified GPU inference API with **native x402 support** — the open payment protocol that allows AI agents to autonomously pay for compute with USDC on Base L2. No API keys, no accounts, no human intervention required.
+[GPU-Bridge](https://gpubridge.io) is a unified GPU inference API with **native x402 support** — the open payment protocol that allows AI agents to autonomously pay for compute with USDC on Base L2. No API keys, no accounts, no human intervention required.
 
 This MCP server exposes all 30 GPU-Bridge services as Model Context Protocol tools, giving Claude (and any MCP-compatible AI) direct access to GPU inference.
 
@@ -19,7 +19,7 @@ This MCP server exposes all 30 GPU-Bridge services as Model Context Protocol too
 
 ### 1. Get your API key (or use x402 for autonomous agents)
 
-Visit [gpubridge.xyz](https://gpubridge.xyz) and grab a free API key, or use the x402 protocol for keyless agent payments.
+Visit [gpubridge.io](https://gpubridge.io) and grab a free API key, or use the x402 protocol for keyless agent payments.
 
 ### 2. Add to `claude_desktop_config.json`
 
@@ -162,7 +162,7 @@ client = PaymentClient(private_key="0x...", chain="base")
 
 response = client.request(
     "POST",
-    "https://api.gpubridge.xyz/v1/run",
+    "https://api.gpubridge.io/v1/run",
     json={
         "service": "flux-schnell",
         "input": {"prompt": "A robot painting on a canvas", "steps": 4}
@@ -191,9 +191,9 @@ All prices in USD. x402 payments in USDC on Base L2.
 
 ## Links
 
-- **Website:** [gpubridge.xyz](https://gpubridge.xyz)
-- **Docs:** [gpubridge.xyz/docs](https://gpubridge.xyz/docs)
-- **Catalog:** [gpubridge.xyz/catalog](https://gpubridge.xyz/catalog)
+- **Website:** [gpubridge.io](https://gpubridge.io)
+- **Docs:** [gpubridge.io/docs](https://gpubridge.io/docs)
+- **Catalog:** [gpubridge.io/catalog](https://gpubridge.io/catalog)
 - **GitHub:** [github.com/gpu-bridge](https://github.com/gpu-bridge)
 - **npm:** [@gpu-bridge/mcp-server](https://www.npmjs.com/package/@gpu-bridge/mcp-server)
 
@@ -201,4 +201,4 @@ All prices in USD. x402 payments in USDC on Base L2.
 
 ## License
 
-MIT © [Healthtech Capital LLC](https://gpubridge.xyz)
+MIT © [Healthtech Capital LLC](https://gpubridge.io)
