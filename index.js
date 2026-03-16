@@ -6,7 +6,7 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema
 } from "@modelcontextprotocol/sdk/types.js";
-var API_BASE = process.env.GPUBRIDGE_URL || "https://api.gpubridge.xyz";
+var API_BASE = process.env.GPUBRIDGE_URL || "https://api.gpubridge.io";
 var API_KEY = process.env.GPUBRIDGE_API_KEY || "";
 var server = new Server(
   { name: "gpu-bridge", version: "2.0.0" },
