@@ -1,6 +1,6 @@
 {
   "name": "@gpu-bridge/mcp-server",
-  "version": "2.4.3",
+  "version": "2.4.4",
   "description": "GPU-Bridge MCP Server — 30 AI services as MCP tools. LLM, image, video, audio, embeddings, reranking, PDF parsing, NSFW detection & more. x402 native for autonomous agents.",
   "type": "module",
   "main": "index.js",
