@@ -10,6 +10,7 @@ import { defiModule } from "./tools/defi.js";
 import { paymentsModule } from "./tools/payments.js";
 import { portfolioModule } from "./tools/portfolio.js";
 import { marketModule } from "./tools/market.js";
+import { docsModule } from "./tools/docs.js";
 // All tool modules — order determines listing order
 const modules = [
     gpuModule,
@@ -18,6 +19,7 @@ const modules = [
     paymentsModule,
     portfolioModule,
     marketModule,
+    docsModule,
 ];
 // Flat list of all tool definitions
 const allTools = modules.flatMap((m) => m.definitions);
