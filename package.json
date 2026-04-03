@@ -12,7 +12,9 @@
     "build": "tsc",
     "build:watch": "tsc --watch",
     "start": "node dist/server.js",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "files": [
     "dist/",
@@ -68,7 +70,8 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.2",
+    "vitest": "^2.1.9"
   },
   "mcpName": "io.github.371-minds/alpha-mcp-server"
 }

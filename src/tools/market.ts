@@ -68,7 +68,7 @@ const definitions: ToolDef[] = [
   {
     name: "market_get_product",
     description:
-      "Get trading pair info (price, 24h volume, bid/ask spread) for a Coinbase Advanced Trade product. No credentials needed for public data.",
+      "Get trading pair info (price, 24h volume, bid/ask spread) for a Coinbase Advanced Trade product. Requires COINBASE_ADV_TRADE_API_KEY and COINBASE_ADV_TRADE_SECRET.",
     inputSchema: {
       type: "object",
       properties: {
@@ -82,7 +82,7 @@ const definitions: ToolDef[] = [
   },
   {
     name: "market_list_products",
-    description: "List all available trading products on Coinbase Advanced Trade with their current prices.",
+    description: "List all available trading products on Coinbase Advanced Trade with their current prices. Requires COINBASE_ADV_TRADE_API_KEY and COINBASE_ADV_TRADE_SECRET.",
     inputSchema: {
       type: "object",
       properties: {
@@ -99,7 +99,7 @@ const definitions: ToolDef[] = [
   {
     name: "market_get_candles",
     description:
-      "Get OHLCV (candlestick) historical price data for a trading product. Use for technical analysis and price charts.",
+      "Get OHLCV (candlestick) historical price data for a trading product. Use for technical analysis and price charts. Requires COINBASE_ADV_TRADE_API_KEY and COINBASE_ADV_TRADE_SECRET.",
     inputSchema: {
       type: "object",
       properties: {
@@ -118,7 +118,7 @@ const definitions: ToolDef[] = [
   },
   {
     name: "market_get_orderbook",
-    description: "Get the current Level 2 order book (bids and asks) for a trading product.",
+    description: "Get the current Level 2 order book (bids and asks) for a trading product. Requires COINBASE_ADV_TRADE_API_KEY and COINBASE_ADV_TRADE_SECRET.",
     inputSchema: {
       type: "object",
       properties: {
@@ -224,6 +224,8 @@ async function handle(name: string, args: Record<string, unknown>): Promise<McpR
   try {
     switch (name) {
       case "market_get_product": {
+        const credsErr = requireMarketCreds();
+        if (credsErr) return credsErr;
         const { product_id } = args as { product_id: string };
         const data = await advTradeCall(`/api/v3/brokerage/products/${product_id}`, "GET");
         return ok(
@@ -232,6 +234,8 @@ async function handle(name: string, args: Record<string, unknown>): Promise<McpR
       }
 
       case "market_list_products": {
+        const credsErr = requireMarketCreds();
+        if (credsErr) return credsErr;
         const { product_type = "SPOT", limit = 50 } = args as { product_type?: string; limit?: number };
         const data = await advTradeCall(
           `/api/v3/brokerage/products?product_type=${product_type}&limit=${limit}`,
@@ -245,6 +249,8 @@ async function handle(name: string, args: Record<string, unknown>): Promise<McpR
       }
 
       case "market_get_candles": {
+        const credsErr = requireMarketCreds();
+        if (credsErr) return credsErr;
         const {
           product_id,
           granularity = "ONE_HOUR",
@@ -276,6 +282,8 @@ async function handle(name: string, args: Record<string, unknown>): Promise<McpR
       }
 
       case "market_get_orderbook": {
+        const credsErr = requireMarketCreds();
+        if (credsErr) return credsErr;
         const { product_id, limit = 10 } = args as { product_id: string; limit?: number };
         const data = await advTradeCall(
           `/api/v3/brokerage/products/${product_id}/book?limit=${limit}`,
