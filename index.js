@@ -6,10 +6,49 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema
 } from "@modelcontextprotocol/sdk/types.js";
+import { createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import {
+  base,
+  baseSepolia,
+  mainnet,
+  optimism,
+  arbitrum,
+  polygon
+} from "viem/chains";
+import { wrapFetchWithPayment } from "x402-fetch";
+
 var API_BASE = process.env.GPUBRIDGE_URL || "https://api.gpubridge.io";
 var API_KEY = process.env.GPUBRIDGE_API_KEY || "";
+var WALLET_KEY = process.env.GPUBRIDGE_WALLET_KEY || "";
+var DEFAULT_CHAIN = process.env.GPUBRIDGE_CHAIN || "base";
+
+var SUPPORTED_CHAINS = {
+  "base":         { viemChain: base,       id: 8453,  name: "Base",          token: "USDC", rpc: "https://mainnet.base.org",        explorer: "https://basescan.org",           network: "mainnet" },
+  "base-sepolia": { viemChain: baseSepolia, id: 84532, name: "Base Sepolia",  token: "USDC", rpc: "https://sepolia.base.org",         explorer: "https://sepolia.basescan.org",   network: "testnet" },
+  "ethereum":     { viemChain: mainnet,    id: 1,     name: "Ethereum",       token: "USDC", rpc: "https://cloudflare-eth.com",       explorer: "https://etherscan.io",           network: "mainnet" },
+  "optimism":     { viemChain: optimism,   id: 10,    name: "Optimism",       token: "USDC", rpc: "https://mainnet.optimism.io",      explorer: "https://optimistic.etherscan.io", network: "mainnet" },
+  "arbitrum":     { viemChain: arbitrum,   id: 42161, name: "Arbitrum One",   token: "USDC", rpc: "https://arb1.arbitrum.io/rpc",    explorer: "https://arbiscan.io",            network: "mainnet" },
+  "polygon":      { viemChain: polygon,    id: 137,   name: "Polygon",        token: "USDC", rpc: "https://polygon-rpc.com",         explorer: "https://polygonscan.com",        network: "mainnet" },
+};
+
+function resolveChain(chainName) {
+  return SUPPORTED_CHAINS[chainName] || SUPPORTED_CHAINS["base"];
+}
+
+function buildFetch(chainName) {
+  if (!WALLET_KEY) return fetch;
+  if (!/^0x[0-9a-fA-F]{64}$/.test(WALLET_KEY)) {
+    throw new Error("GPUBRIDGE_WALLET_KEY must be a 32-byte hex private key with 0x prefix (0x followed by 64 hex characters)");
+  }
+  const chain = resolveChain(chainName || DEFAULT_CHAIN);
+  const account = privateKeyToAccount(WALLET_KEY);
+  const client = createWalletClient({ account, transport: http(chain.rpc), chain: chain.viemChain });
+  return wrapFetchWithPayment(fetch, client);
+}
+
 var server = new Server(
-  { name: "gpu-bridge", version: "2.0.0" },
+  { name: "gpu-bridge", version: "2.5.0" },
   { capabilities: { tools: {} } }
 );
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -32,6 +71,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
             type: "string",
             enum: ["fast", "cheap"],
             description: 'Routing priority. "fast" = lowest latency (default), "cheap" = lowest cost.'
+          },
+          chain: {
+            type: "string",
+            enum: ["base", "base-sepolia", "ethereum", "optimism", "arbitrum", "polygon"],
+            description: 'Payment chain for x402 autonomous payments. Overrides GPUBRIDGE_CHAIN env var. Default: "base". Only used when GPUBRIDGE_WALLET_KEY is set.'
           }
         },
         required: ["service", "input"]
@@ -69,23 +113,29 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         },
         required: ["service"]
       }
+    },
+    {
+      name: "gpu_payment_chains",
+      description: "List all supported payment chains for x402 autonomous payments. Returns chain IDs, tokens, RPCs, and network types. Use to pick the right chain before calling gpu_run.",
+      inputSchema: { type: "object", properties: {} }
     }
   ]
 }));
-async function apiCall(endpoint, method, body, headers) {
+async function apiCall(endpoint, method, body, headers, fetchFn) {
+  const fn = fetchFn || fetch;
   const h = { "Content-Type": "application/json", ...headers };
   if (API_KEY) h["Authorization"] = `Bearer ${API_KEY}`;
-  const res = await fetch(`${API_BASE}${endpoint}`, {
+  const res = await fn(`${API_BASE}${endpoint}`, {
     method,
     headers: h,
     ...body && { body: JSON.stringify(body) }
   });
   return res.json();
 }
-async function pollJob(jobId, maxWait = 3e5) {
+async function pollJob(jobId, maxWait = 3e5, fetchFn) {
   const start = Date.now();
   while (Date.now() - start < maxWait) {
-    const status = await apiCall(`/status/${jobId}`, "GET");
+    const status = await apiCall(`/status/${jobId}`, "GET", null, {}, fetchFn);
     if (status.status === "completed") return status;
     if (status.status === "failed") {
       const msg = status.error || "Job failed";
@@ -102,16 +152,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     switch (name) {
       case "gpu_run": {
-        const { service, input, priority } = args;
+        const { service, input, priority, chain } = args;
+        const fetchFn = buildFetch(chain);
         const headers = {};
         if (priority) headers["X-Priority"] = priority;
-        const job = await apiCall("/run", "POST", { service, input }, headers);
+        const job = await apiCall("/run", "POST", { service, input }, headers, fetchFn);
         if (job.error) {
-          return { content: [{ type: "text", text: `Error: ${job.error}${job.hint ? `
-Hint: ${job.hint}` : ""}${job.available_services ? `
-Available: ${job.available_services.join(", ")}` : ""}` }], isError: true };
+          return { content: [{ type: "text", text: `Error: ${job.error}${job.hint ? `\nHint: ${job.hint}` : ""}${job.available_services ? `\nAvailable: ${job.available_services.join(", ")}` : ""}` }], isError: true };
         }
-        const result = await pollJob(job.job_id);
+        const result = await pollJob(job.job_id, 3e5, fetchFn);
         const output = result.output;
         let text;
         if (typeof output === "string") {
@@ -128,9 +177,7 @@ Available: ${job.available_services.join(", ")}` : ""}` }], isError: true };
           text = JSON.stringify(output, null, 2);
         }
         if (result.output_notice) {
-          text += `
-
-Note: ${result.output_notice}`;
+          text += `\n\nNote: ${result.output_notice}`;
         }
         return { content: [{ type: "text", text }] };
       }
@@ -145,17 +192,11 @@ Note: ${result.output_notice}`;
           const models = (s.models || []).length;
           byCategory[cat].push(`  ${s.key} \u2014 ${s.name} (${pricing}${models ? `, ${models} models` : ""})`);
         }
-        let text = `GPU-Bridge: ${catalog.active_endpoints} services available
-
-`;
+        let text = `GPU-Bridge: ${catalog.active_endpoints} services available\n\n`;
         for (const [cat, items] of Object.entries(byCategory)) {
-          text += `${cat.toUpperCase()}:
-${items.join("\n")}
-
-`;
+          text += `${cat.toUpperCase()}:\n${items.join("\n")}\n\n`;
         }
-        text += `Use gpu_run with service key and input to run any service.
-Use gpu_estimate to check cost before running.`;
+        text += `Use gpu_run with service key and input to run any service.\nUse gpu_estimate to check cost before running.`;
         return { content: [{ type: "text", text }] };
       }
       case "gpu_status": {
@@ -163,38 +204,28 @@ Use gpu_estimate to check cost before running.`;
         const status = await apiCall(`/status/${job_id}`, "GET");
         let text = `Job ${status.id}: ${status.status}`;
         if (status.progress) {
-          text += `
-Progress: ${status.progress.phase} (${status.progress.percent_estimate}%, ${status.progress.elapsed_seconds}s elapsed)`;
+          text += `\nProgress: ${status.progress.phase} (${status.progress.percent_estimate}%, ${status.progress.elapsed_seconds}s elapsed)`;
         }
         if (status.output) {
           const o = status.output;
-          if (o.text) text += `
-Output: ${o.text}`;
-          else if (o.url) text += `
-Output: ${o.url}`;
-          else if (o.audio_url) text += `
-Output: ${o.audio_url}`;
-          else text += `
-Output: ${JSON.stringify(o)}`;
+          if (o.text) text += `\nOutput: ${o.text}`;
+          else if (o.url) text += `\nOutput: ${o.url}`;
+          else if (o.audio_url) text += `\nOutput: ${o.audio_url}`;
+          else text += `\nOutput: ${JSON.stringify(o)}`;
         }
         if (status.error) {
-          text += `
-Error: ${status.error}`;
+          text += `\nError: ${status.error}`;
           if (status.refunded) text += ` (refunded $${status.refund_amount_usd})`;
         }
-        if (status.output_notice) text += `
-Note: ${status.output_notice}`;
+        if (status.output_notice) text += `\nNote: ${status.output_notice}`;
         return { content: [{ type: "text", text }] };
       }
       case "gpu_balance": {
         const balance = await apiCall("/account/balance", "GET");
         const vd = balance.volume_discount || {};
-        let text = `Balance: $${balance.balance}
-Daily spend: $${balance.daily_spend}/$${balance.daily_limit}
-Tier: ${vd.tier} (${vd.discount_percent}% discount)`;
+        let text = `Balance: $${balance.balance}\nDaily spend: $${balance.daily_spend}/$${balance.daily_limit}\nTier: ${vd.tier} (${vd.discount_percent}% discount)`;
         if (vd.next_tier) {
-          text += `
-Next tier: ${vd.next_tier.name} at $${vd.next_tier.threshold} spent (${vd.next_tier.discountPercent}% discount)`;
+          text += `\nNext tier: ${vd.next_tier.name} at $${vd.next_tier.threshold} spent (${vd.next_tier.discountPercent}% discount)`;
         }
         return { content: [{ type: "text", text }] };
       }
@@ -203,13 +234,31 @@ Next tier: ${vd.next_tier.name} at $${vd.next_tier.threshold} spent (${vd.next_t
         const qs = seconds ? `&seconds=${seconds}` : "";
         const est = await apiCall(`/catalog/estimate?service=${service}${qs}`, "GET");
         if (est.error) {
-          return { content: [{ type: "text", text: `Error: ${est.error}${est.available_services ? `
-Available: ${est.available_services.join(", ")}` : ""}` }], isError: true };
+          return { content: [{ type: "text", text: `Error: ${est.error}${est.available_services ? `\nAvailable: ${est.available_services.join(", ")}` : ""}` }], isError: true };
         }
-        return { content: [{ type: "text", text: `Service: ${est.service}
-Estimated cost: $${est.estimated_cost_usd}
-Rate: $${est.price_per_second}/sec
-${est.note}` }] };
+        return { content: [{ type: "text", text: `Service: ${est.service}\nEstimated cost: $${est.estimated_cost_usd}\nRate: $${est.price_per_second}/sec\n${est.note}` }] };
+      }
+      case "gpu_payment_chains": {
+        const activeChain = DEFAULT_CHAIN;
+        const walletConfigured = !!WALLET_KEY;
+        const keyWidth = Math.max(...Object.keys(SUPPORTED_CHAINS).map((k) => k.length)) + 2;
+        const nameWidth = Math.max(...Object.values(SUPPORTED_CHAINS).map((c) => c.name.length)) + 2;
+        let text = `GPU-Bridge x402 Payment Chains\n`;
+        text += `x402 auto-payment: ${walletConfigured ? "enabled (GPUBRIDGE_WALLET_KEY is set)" : "disabled (set GPUBRIDGE_WALLET_KEY to enable)"}\n`;
+        text += `Active chain: ${activeChain} (set GPUBRIDGE_CHAIN to change default)\n\n`;
+        text += `SUPPORTED CHAINS:\n`;
+        for (const [key, c] of Object.entries(SUPPORTED_CHAINS)) {
+          const marker = key === activeChain ? " ◀ active" : "";
+          const networkLabel = c.network === "testnet" ? " [testnet]" : "";
+          text += `  ${key.padEnd(keyWidth)}— ${c.name.padEnd(nameWidth)}(chain ID ${c.id}, ${c.token}, ${c.network})${networkLabel}${marker}\n`;
+        }
+        text += `\nUsage:\n`;
+        text += `  • Set GPUBRIDGE_WALLET_KEY=0x<64-hex-chars> to enable keyless x402 auto-payment\n`;
+        text += `  • Set GPUBRIDGE_CHAIN=<chain> to set the default payment chain\n`;
+        text += `  • Pass chain="<chain>" in gpu_run to override per request\n`;
+        text += `\nNote: base-sepolia is a testnet chain intended for development only.\n`;
+        text += `Supported tokens: USDC on all chains listed above.`;
+        return { content: [{ type: "text", text }] };
       }
       default:
         throw new Error(`Unknown tool: ${name}`);
@@ -223,3 +272,4 @@ async function main() {
   await server.connect(transport);
 }
 main().catch(console.error);
+

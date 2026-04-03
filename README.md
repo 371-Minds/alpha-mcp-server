@@ -1,7 +1,7 @@
 # GPU-Bridge MCP Server
 
 > **30 GPU-powered AI services as MCP tools** — LLMs, image generation, audio, video, embeddings, reranking, PDF parsing, NSFW detection & more.
-> **x402 native** for autonomous AI agents: pay per request on-chain with USDC on Base L2. No API keys. No accounts.
+> **x402 native** for autonomous AI agents: pay per request on-chain with USDC across 6 EVM chains. No API keys. No accounts.
 
 [![npm version](https://img.shields.io/npm/v/@gpu-bridge/mcp-server.svg)](https://www.npmjs.com/package/@gpu-bridge/mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -9,7 +9,7 @@
 
 ## What is GPU-Bridge?
 
-[GPU-Bridge](https://gpubridge.io) is a unified GPU inference API with **native x402 support** — the open payment protocol that allows AI agents to autonomously pay for compute with USDC on Base L2. No API keys, no accounts, no human intervention required.
+[GPU-Bridge](https://gpubridge.io) is a unified GPU inference API with **native x402 support** — the open payment protocol that allows AI agents to autonomously pay for compute with USDC on any supported EVM chain. No API keys, no accounts, no human intervention required.
 
 This MCP server exposes all 30 GPU-Bridge services as Model Context Protocol tools, giving Claude (and any MCP-compatible AI) direct access to GPU inference.
 
@@ -17,15 +17,18 @@ This MCP server exposes all 30 GPU-Bridge services as Model Context Protocol too
 
 ## Install in Claude Desktop (2 minutes)
 
-### 1. Get your API key (or use x402 for autonomous agents)
+### 1. Choose your auth mode
 
-Visit [gpubridge.io](https://gpubridge.io) and grab a free API key, or use the x402 protocol for keyless agent payments.
+**Option A — API key (simplest):** Visit [gpubridge.io](https://gpubridge.io) and grab a free API key.
+
+**Option B — x402 autonomous payments (keyless):** Fund a wallet with USDC on any supported chain and provide the private key via `GPUBRIDGE_WALLET_KEY`. The MCP server automatically handles HTTP 402 payment flows — no human needed.
 
 ### 2. Add to `claude_desktop_config.json`
 
 **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
 **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 
+**API key mode:**
 ```json
 {
   "mcpServers": {
@@ -40,9 +43,38 @@ Visit [gpubridge.io](https://gpubridge.io) and grab a free API key, or use the x
 }
 ```
 
+**x402 autonomous payment mode:**
+```json
+{
+  "mcpServers": {
+    "gpu-bridge": {
+      "command": "npx",
+      "args": ["-y", "@gpu-bridge/mcp-server"],
+      "env": {
+        "GPUBRIDGE_WALLET_KEY": "0x<your-64-hex-char-private-key>",
+        "GPUBRIDGE_CHAIN": "base"
+      }
+    }
+  }
+}
+```
+
 ### 3. Restart Claude Desktop
 
 That's it. Claude now has access to 30 GPU-powered AI services.
+
+---
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `GPUBRIDGE_API_KEY` | API key for credit-based auth | — |
+| `GPUBRIDGE_WALLET_KEY` | EVM private key (`0x…`) for x402 auto-payment | — |
+| `GPUBRIDGE_CHAIN` | Default payment chain for x402 | `base` |
+| `GPUBRIDGE_URL` | API base URL override | `https://api.gpubridge.io` |
+
+> **Security note:** Store `GPUBRIDGE_WALLET_KEY` in your system's secret manager or environment, never in source code.
 
 ---
 
@@ -56,6 +88,7 @@ Parameters:
   service  (string)  — Service key (e.g., "llm-4090", "flux-schnell", "whisper-l4")
   input    (object)  — Service-specific input parameters
   priority (string)  — Optional: "fast" (lowest latency) or "cheap" (lowest cost)
+  chain    (string)  — Optional: payment chain override for x402 (e.g., "base", "optimism")
 ```
 
 ### `gpu_catalog`
@@ -69,6 +102,9 @@ Check the status of a job and retrieve results.
 
 ### `gpu_balance`
 Check your current balance, daily spend, and volume discount tier.
+
+### `gpu_payment_chains`
+List all supported payment chains for x402 autonomous payments. Returns chain names, IDs, tokens, RPC endpoints, and which chain is currently active. Call this to inspect or choose a chain before using `gpu_run`.
 
 ---
 
@@ -143,17 +179,44 @@ Check your current balance, daily spend, and volume discount tier.
 
 ## x402: For Autonomous AI Agents
 
-GPU-Bridge supports the [x402 payment protocol](https://x402.org), enabling truly autonomous AI agents to pay for compute without human intervention.
+GPU-Bridge supports the [x402 payment protocol](https://x402.org), enabling truly autonomous AI agents to pay for compute without human intervention — across **6 EVM chains**.
 
 ```
 Agent Request → GPU-Bridge returns HTTP 402 Payment Required
       ↓
-Agent pays USDC on Base L2 (gas < $0.01, settles in 2s)
+MCP server signs & submits USDC payment on chosen chain (gas < $0.01, settles in 2s)
       ↓
-Agent retries with payment proof → GPU-Bridge executes and returns result
+MCP server retries with payment proof → GPU-Bridge executes and returns result
 ```
 
-### Python Example with x402
+The MCP server handles the full x402 payment loop automatically when `GPUBRIDGE_WALLET_KEY` is set. No external tooling or manual signing required.
+
+### Supported Payment Chains
+
+| Chain key | Chain | Chain ID | Token | Network |
+|-----------|-------|----------|-------|---------|
+| `base` *(default)* | Base | 8453 | USDC | mainnet |
+| `base-sepolia` | Base Sepolia | 84532 | USDC | testnet |
+| `ethereum` | Ethereum | 1 | USDC | mainnet |
+| `optimism` | Optimism | 10 | USDC | mainnet |
+| `arbitrum` | Arbitrum One | 42161 | USDC | mainnet |
+| `polygon` | Polygon | 137 | USDC | mainnet |
+
+Use the `gpu_payment_chains` tool at runtime to see chain status and which chain is active.
+
+### Per-Request Chain Selection
+
+Pass `chain` in `gpu_run` to override the default for a single request:
+
+```json
+{
+  "service": "llm-4090",
+  "input": { "prompt": "Hello!" },
+  "chain": "optimism"
+}
+```
+
+### Python Example with x402 (external client)
 
 ```python
 from x402.client import PaymentClient
@@ -185,7 +248,7 @@ print(response.json())
 | Reranking | $0.001/query |
 | PDF Parsing | $0.005/document |
 
-All prices in USD. x402 payments in USDC on Base L2.
+All prices in USD. x402 payments in USDC on any supported chain (Base, Ethereum, Optimism, Arbitrum, Polygon).
 
 ---
 
