@@ -110,7 +110,7 @@ describe("Server module aggregation", () => {
     }
   });
 
-  it("total tool count matches expected 47 tools", () => {
+  it("total tool count matches expected 49 tools", () => {
     const total = ALL_MODULES.reduce((sum, m) => sum + m.definitions.length, 0);
     expect(total).toBe(49);
   });
