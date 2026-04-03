@@ -1,6 +1,6 @@
 # Alpha MCP Server — Superintelligence Co-Pilot
 
-> **47 tools in one MCP server**: GPU AI inference + Coinbase DeFi, CDP wallets, Commerce payments, portfolio management, and institutional markets.
+> **48 tools in one MCP server**: GPU AI inference + Coinbase DeFi, CDP wallets, Commerce payments, portfolio management, institutional markets, and protocol reference docs.
 > **x402 native** for autonomous agent payments with USDC on 6 EVM chains.
 
 [![npm version](https://img.shields.io/npm/v/@371-minds/alpha-mcp-server.svg)](https://www.npmjs.com/package/@371-minds/alpha-mcp-server)
@@ -19,6 +19,7 @@ A full-stack AI co-pilot that gives Claude (and any MCP-compatible AI) direct ac
 - **7 Payment tools** — Coinbase Commerce charges, checkouts, and x402 autonomous payments
 - **7 Portfolio tools** — Coinbase App OAuth2 accounts, transactions, and spot prices
 - **9 Market tools** — Coinbase Advanced Trade: order books, candles, place/cancel orders
+- **1 Docs tool** — Fetch x402 extension specs and Farcaster Mini Apps documentation
 
 ---
 
@@ -216,6 +217,12 @@ A full-stack AI co-pilot that gives Claude (and any MCP-compatible AI) direct ac
 | `market_cancel_orders` | Cancel orders by ID |
 | `market_get_fills` | Trade execution history |
 
+### Reference Docs (1 tool)
+
+| Tool | Description |
+|------|-------------|
+| `docs_fetch` | Fetch latest x402 extension specs (payment-identifier, offer-receipt, eip2612-gas-sponsoring, erc20-approval-gas-sponsoring) or Farcaster Mini Apps docs (agents-checklist, llms-full) |
+
 ---
 
 ## x402: Autonomous Agent Payments
@@ -270,6 +277,7 @@ src/
     payments.ts      # Coinbase Commerce + x402
     portfolio.ts     # Coinbase App OAuth2 + portfolio
     market.ts        # Advanced Trade API (JWT auth)
+    docs.ts          # Reference docs: x402 extensions + Farcaster Mini Apps
 ```
 
 Each tool module exports `{ definitions, handle }` and is independently testable.
