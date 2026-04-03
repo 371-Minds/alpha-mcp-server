@@ -1,12 +1,16 @@
-name: gpu-bridge
-displayName: GPU-Bridge
-description: 30 GPU-powered AI services as MCP tools — LLMs, image generation, audio, video, embeddings, reranking, PDF parsing, NSFW detection & more. x402 native for autonomous agents across 6 EVM chains.
-homepage: https://gpubridge.io
-repository: https://github.com/gpu-bridge/mcp-server
+name: alpha-mcp-server
+displayName: Alpha MCP Server — Superintelligence Co-Pilot
+description: >
+  47 tools in one MCP server: GPU AI inference (30 services), Coinbase CDP wallets, DeFi (Pyth oracles, Morpho vaults, Across bridge), Commerce payments, Coinbase portfolio OAuth2, and Advanced Trade markets. x402 native for autonomous agents.
+homepage: https://github.com/371-Minds/alpha-mcp-server
 license: MIT
 categories:
   - ai
   - inference
+  - crypto
+  - defi
+  - payments
+  - trading
   - image-generation
   - audio
 tools:
@@ -16,3 +20,45 @@ tools:
   - gpu_status
   - gpu_balance
   - gpu_payment_chains
+  - cdp_create_account
+  - cdp_get_account
+  - cdp_list_balances
+  - cdp_send_transaction
+  - cdp_sign_message
+  - cdp_export_account
+  - cdp_request_faucet
+  - cdp_get_swap_price
+  - cdp_create_swap
+  - defi_pyth_price_feed
+  - defi_pyth_price
+  - defi_messari_research
+  - defi_farcaster_post
+  - defi_farcaster_profile
+  - defi_morpho_deposit
+  - defi_morpho_withdraw
+  - defi_across_bridge
+  - bazaar_list
+  - bazaar_call
+  - pay_create_charge
+  - pay_get_charge
+  - pay_list_charges
+  - pay_create_checkout
+  - pay_resolve_charge
+  - pay_x402_check
+  - pay_list_events
+  - cb_oauth_url
+  - cb_exchange_token
+  - cb_get_user
+  - cb_get_accounts
+  - cb_get_transactions
+  - cb_get_spot_price
+  - cb_get_exchange_rates
+  - market_get_product
+  - market_list_products
+  - market_get_candles
+  - market_get_orderbook
+  - market_create_order
+  - market_get_order
+  - market_list_orders
+  - market_cancel_orders
+  - market_get_fills
