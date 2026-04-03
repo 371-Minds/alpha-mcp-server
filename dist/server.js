@@ -11,6 +11,7 @@ import { paymentsModule } from "./tools/payments.js";
 import { portfolioModule } from "./tools/portfolio.js";
 import { marketModule } from "./tools/market.js";
 import { docsModule } from "./tools/docs.js";
+import { opencliModule } from "./tools/opencli.js";
 // All tool modules — order determines listing order
 const modules = [
     gpuModule,
@@ -20,6 +21,7 @@ const modules = [
     portfolioModule,
     marketModule,
     docsModule,
+    opencliModule,
 ];
 // Flat list of all tool definitions
 const allTools = modules.flatMap((m) => m.definitions);

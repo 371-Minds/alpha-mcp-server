@@ -11,6 +11,7 @@ import { paymentsModule } from "./tools/payments.js";
 import { portfolioModule } from "./tools/portfolio.js";
 import { marketModule } from "./tools/market.js";
 import { docsModule } from "./tools/docs.js";
+import { opencliModule } from "./tools/opencli.js";
 import type { ToolModule } from "./types.js";
 
 // All tool modules — order determines listing order
@@ -22,6 +23,7 @@ const modules: ToolModule[] = [
   portfolioModule,
   marketModule,
   docsModule,
+  opencliModule,
 ];
 
 // Flat list of all tool definitions
