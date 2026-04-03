@@ -64,10 +64,14 @@ describe("marketModule structure", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Credential-protected tools return missingEnv when creds absent
+// All market tools require credentials
 // ---------------------------------------------------------------------------
 
 const credProtectedTools = [
+  "market_get_product",
+  "market_list_products",
+  "market_get_candles",
+  "market_get_orderbook",
   "market_create_order",
   "market_get_order",
   "market_list_orders",
@@ -143,7 +147,7 @@ describe("market_create_order — input validation", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Public market data tools (no auth needed)
+// Market data tools (all require credentials)
 // ---------------------------------------------------------------------------
 
 describe("market_get_product", () => {
