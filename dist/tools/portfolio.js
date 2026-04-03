@@ -167,7 +167,19 @@ async function handle(name, args) {
                     return missingEnv("COINBASE_OAUTH_TOKEN");
                 const resp = await cbCall("/user", "GET", token);
                 const user = resp.data;
-                return ok(`Coinbase User:\nID: ${user.id}\nName: ${user.name}\nEmail: ${user.email || "(private)"}\nUsername: ${user.username || "(none)"}\nCountry: ${user.country?.name || "—"}\nNative currency: ${user.native_currency || "USD"}\nCreated: ${user.created_at}`);
+                const country = user.country?.name || "—";
+                const nativeCurrency = user.native_currency || "USD";
+                const userText = [
+                    `Coinbase User:`,
+                    `ID: ${user.id}`,
+                    `Name: ${user.name}`,
+                    `Email: ${user.email || "(private)"}`,
+                    `Username: ${user.username || "(none)"}`,
+                    `Country: ${country}`,
+                    `Native currency: ${nativeCurrency}`,
+                    `Created: ${user.created_at}`,
+                ].join("\n");
+                return ok(userText);
             }
             case "cb_get_accounts": {
                 const token = getOAuthToken();

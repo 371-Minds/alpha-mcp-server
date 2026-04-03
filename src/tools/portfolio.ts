@@ -192,9 +192,19 @@ async function handle(name: string, args: Record<string, unknown>): Promise<McpR
         if (!token) return missingEnv("COINBASE_OAUTH_TOKEN");
         const resp = await cbCall("/user", "GET", token);
         const user = resp.data as Record<string, unknown>;
-        return ok(
-          `Coinbase User:\nID: ${user.id}\nName: ${user.name}\nEmail: ${user.email || "(private)"}\nUsername: ${user.username || "(none)"}\nCountry: ${(user.country as Record<string, string> | undefined)?.name || "—"}\nNative currency: ${(user.native_currency as string) || "USD"}\nCreated: ${user.created_at}`
-        );
+        const country = (user.country as Record<string, string> | undefined)?.name || "—";
+        const nativeCurrency = (user.native_currency as string) || "USD";
+        const userText = [
+          `Coinbase User:`,
+          `ID: ${user.id}`,
+          `Name: ${user.name}`,
+          `Email: ${user.email || "(private)"}`,
+          `Username: ${user.username || "(none)"}`,
+          `Country: ${country}`,
+          `Native currency: ${nativeCurrency}`,
+          `Created: ${user.created_at}`,
+        ].join("\n");
+        return ok(userText);
       }
 
       case "cb_get_accounts": {

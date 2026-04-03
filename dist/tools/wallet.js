@@ -1,5 +1,6 @@
 // CDP SDK v2 wallet tools — create accounts, transfer assets, sign messages, swap tokens
 import { CdpClient } from "@coinbase/cdp-sdk";
+import { parseEther } from "viem";
 import { ok, err, missingEnv } from "../types.js";
 function getCdpClient() {
     const apiKeyId = process.env.CDP_API_KEY_ID;
@@ -191,7 +192,14 @@ async function handle(name, args) {
                 }
                 const lines = result.balances.map((b) => {
                     const symbol = b.token.symbol || b.token.contractAddress;
-                    const amount = (Number(b.amount.amount) / Math.pow(10, b.amount.decimals)).toFixed(6);
+                    // Use BigInt arithmetic to avoid precision loss for large token amounts
+                    const rawAmount = b.amount.amount;
+                    const decimals = b.amount.decimals;
+                    const divisor = BigInt(10) ** BigInt(decimals);
+                    const whole = rawAmount / divisor;
+                    const fraction = rawAmount % divisor;
+                    const fractionStr = fraction.toString().padStart(decimals, "0").slice(0, 6);
+                    const amount = `${whole}.${fractionStr}`;
                     return `  ${symbol}: ${amount}`;
                 });
                 return ok(`Token balances for ${address} on ${network}:\n${lines.join("\n")}`);
@@ -200,7 +208,8 @@ async function handle(name, args) {
                 const { address, to, value_eth, data, network = "base-mainnet", } = args;
                 if (!process.env.CDP_WALLET_SECRET)
                     return missingEnv("CDP_WALLET_SECRET");
-                const valueWei = value_eth ? BigInt(Math.round(parseFloat(value_eth) * 1e18)) : undefined;
+                // Use parseEther from viem for exact BigInt conversion (no floating-point rounding)
+                const valueWei = value_eth ? parseEther(value_eth) : undefined;
                 const result = await cdp.evm.sendTransaction({
                     address: address,
                     network: network,

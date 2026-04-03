@@ -262,14 +262,16 @@ async function handle(name: string, args: Record<string, unknown>): Promise<McpR
         if (candles.length === 0) return ok("No candle data returned.");
         const first = candles[0];
         const last = candles[candles.length - 1];
+        const fmtDate = (ts: string) => new Date(parseInt(ts) * 1000).toISOString();
+        const fmtCandle = (c: Record<string, string>) =>
+          `  ${fmtDate(c.start).slice(0, 16)} O:${c.open} H:${c.high} L:${c.low} C:${c.close} V:${c.volume}`;
         let text = `${product_id} ${granularity} candles (${candles.length} bars)\n`;
-        text += `Period: ${new Date(parseInt(last.start) * 1000).toISOString()} → ${new Date(parseInt(first.start) * 1000).toISOString()}\n\n`;
-        text += `Latest candle:\n  Open:  ${first.open}\n  High:  ${first.high}\n  Low:   ${first.low}\n  Close: ${first.close}\n  Volume: ${first.volume}\n\n`;
+        text += `Period: ${fmtDate(last.start)} → ${fmtDate(first.start)}\n\n`;
+        text += `Latest candle:\n`;
+        text += `  Open:  ${first.open}\n  High:  ${first.high}\n`;
+        text += `  Low:   ${first.low}\n  Close: ${first.close}\n  Volume: ${first.volume}\n\n`;
         text += `Recent candles (newest first):\n`;
-        text += candles
-          .slice(0, 10)
-          .map((c) => `  ${new Date(parseInt(c.start) * 1000).toISOString().slice(0, 16)} O:${c.open} H:${c.high} L:${c.low} C:${c.close} V:${c.volume}`)
-          .join("\n");
+        text += candles.slice(0, 10).map(fmtCandle).join("\n");
         return ok(text);
       }
 

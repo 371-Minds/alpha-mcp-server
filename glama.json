@@ -1,10 +1,10 @@
 {
   "$schema": "https://glama.ai/mcp/schemas/server.json",
   "maintainers": ["fjnunezp75"],
-  "name": "GPU-Bridge MCP Server",
-  "description": "Unified GPU inference — 30 AI services via one MCP tool. LLM, image gen, video, speech, vision, document parsing, reranking & more. Pay with USDC (x402) or API key.",
-  "homepage": "https://gpubridge.io",
+  "name": "Alpha MCP Server — Superintelligence Co-Pilot",
+  "description": "47 tools: GPU AI inference (30 services), Coinbase CDP wallets, DeFi (Pyth, Morpho, Across bridge), Commerce payments, portfolio OAuth2, and Advanced Trade markets. x402 native for autonomous agents.",
+  "homepage": "https://github.com/371-Minds/alpha-mcp-server",
   "license": "MIT",
-  "categories": ["ai", "inference", "developer-tools"],
-  "keywords": ["gpu", "ai", "inference", "llm", "image-generation", "video", "x402", "embeddings", "rag", "mcp"]
+  "categories": ["ai", "inference", "crypto", "defi", "payments", "developer-tools"],
+  "keywords": ["gpu", "ai", "inference", "llm", "image-generation", "video", "x402", "embeddings", "rag", "mcp", "coinbase", "cdp", "defi", "wallet", "crypto", "payments", "agentkit", "morpho", "pyth", "advanced-trade"]
 }
