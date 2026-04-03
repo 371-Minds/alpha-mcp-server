@@ -1,18 +1,27 @@
 {
-  "name": "@gpu-bridge/mcp-server",
-  "version": "2.5.0",
-  "description": "GPU-Bridge MCP Server — 30 AI services as MCP tools. LLM, image, video, audio, embeddings, reranking, PDF parsing, NSFW detection & more. x402 native for autonomous agents.",
+  "name": "@371-minds/alpha-mcp-server",
+  "version": "3.0.0",
+  "description": "Alpha MCP Server — Superintelligence Co-Pilot. 47 tools: GPU AI inference, Coinbase CDP wallets, DeFi (Pyth, Morpho, Across), payments (Commerce, x402), portfolio (OAuth2), and institutional markets (Advanced Trade). x402 native.",
   "type": "module",
-  "main": "index.js",
+  "main": "dist/server.js",
   "bin": {
-    "gpu-bridge-mcp": "index.js"
+    "alpha-mcp-server": "dist/server.js",
+    "gpu-bridge-mcp": "dist/server.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "start": "node dist/server.js",
+    "prepare": "npm run build"
   },
   "files": [
-    "index.js",
+    "dist/",
+    "src/",
     "README.md",
     "LICENSE",
     "glama.json",
-    "smithery.yaml"
+    "smithery.yaml",
+    "tsconfig.json"
   ],
   "keywords": [
     "mcp",
@@ -26,23 +35,40 @@
     "embeddings",
     "reranking",
     "x402",
+    "coinbase",
+    "cdp",
+    "defi",
+    "wallet",
+    "crypto",
+    "payments",
+    "agentkit",
+    "morpho",
+    "pyth",
+    "advanced-trade",
     "claude",
     "model-context-protocol"
   ],
-  "author": "GPU-Bridge <hello@gpubridge.io>",
+  "author": "371 Minds",
   "license": "MIT",
-  "homepage": "https://gpubridge.io",
+  "homepage": "https://github.com/371-Minds/alpha-mcp-server",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gpu-bridge/mcp-server.git"
+    "url": "git+https://github.com/371-Minds/alpha-mcp-server.git"
   },
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
+    "@coinbase/agentkit": "^0.10.4",
+    "@coinbase/cdp-sdk": "^1.46.1",
+    "@coinbase/coinbase-sdk": "^0.25.0",
     "@modelcontextprotocol/sdk": "^1.27.0",
     "viem": "^2.47.6",
     "x402-fetch": "^1.1.0"
   },
-  "mcpName": "io.github.gpu-bridge/gpu-bridge"
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^6.0.2"
+  },
+  "mcpName": "io.github.371-minds/alpha-mcp-server"
 }
