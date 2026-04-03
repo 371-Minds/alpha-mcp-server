@@ -1,6 +1,6 @@
 name: gpu-bridge
 displayName: GPU-Bridge
-description: 30 GPU-powered AI services as MCP tools — LLMs, image generation, audio, video, embeddings, reranking, PDF parsing, NSFW detection & more. x402 native for autonomous agents.
+description: 30 GPU-powered AI services as MCP tools — LLMs, image generation, audio, video, embeddings, reranking, PDF parsing, NSFW detection & more. x402 native for autonomous agents across 6 EVM chains.
 homepage: https://gpubridge.io
 repository: https://github.com/gpu-bridge/mcp-server
 license: MIT
@@ -15,3 +15,4 @@ tools:
   - gpu_estimate
   - gpu_status
   - gpu_balance
+  - gpu_payment_chains
