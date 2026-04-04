@@ -1,21 +1,22 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { marketModule } from "./market.js";
+import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
 
 // ---------------------------------------------------------------------------
 // Mock node:crypto so generateJWT never tries to sign with a real PEM key
 // ---------------------------------------------------------------------------
 
-vi.mock("node:crypto", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("node:crypto")>();
+mock.module("node:crypto", () => {
   return {
-    ...actual,
-    createSign: vi.fn().mockReturnValue({
-      update: vi.fn().mockReturnThis(),
-      sign: vi.fn().mockReturnValue(Buffer.from("fakesignature")),
+    createSign: mock().mockReturnValue({
+      update: mock().mockReturnThis(),
+      sign: mock().mockReturnValue(Buffer.from("fakesignature")),
     }),
-    randomBytes: vi.fn().mockReturnValue(Buffer.from("deadbeefdeadbeef", "hex")),
+    randomBytes: mock().mockReturnValue(Buffer.from("deadbeefdeadbeef", "hex")),
   };
 });
+
+import { marketModule } from "./market.js";
+
+const originalFetch = globalThis.fetch;
 
 // A placeholder key string — generateJWT will use it but crypto is mocked
 const FAKE_SECRET = "-----BEGIN EC PRIVATE KEY-----\nMHQCAQEEIMockKey\n-----END EC PRIVATE KEY-----";
@@ -25,19 +26,19 @@ const FAKE_SECRET = "-----BEGIN EC PRIVATE KEY-----\nMHQCAQEEIMockKey\n-----END 
 // ---------------------------------------------------------------------------
 
 function stubFetchOk(body: unknown): void {
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+  globalThis.fetch = mock().mockResolvedValue({
     ok: true,
     json: () => Promise.resolve(body),
     status: 200,
-  }));
+  }) as unknown as typeof fetch;
 }
 
 function stubFetchError(status: number, body = "API Error"): void {
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+  globalThis.fetch = mock().mockResolvedValue({
     ok: false,
     status,
     text: () => Promise.resolve(body),
-  }));
+  }) as unknown as typeof fetch;
 }
 
 // ---------------------------------------------------------------------------
@@ -88,7 +89,7 @@ describe("marketModule — missing credentials", () => {
   afterEach(() => {
     delete process.env.COINBASE_ADV_TRADE_API_KEY;
     delete process.env.COINBASE_ADV_TRADE_SECRET;
-    vi.unstubAllGlobals();
+    globalThis.fetch = originalFetch;
   });
 
   for (const toolName of credProtectedTools) {
@@ -120,7 +121,7 @@ describe("market_create_order — input validation", () => {
   afterEach(() => {
     delete process.env.COINBASE_ADV_TRADE_API_KEY;
     delete process.env.COINBASE_ADV_TRADE_SECRET;
-    vi.unstubAllGlobals();
+    globalThis.fetch = originalFetch;
   });
 
   it("returns error when limit_price is missing for limit orders", async () => {
@@ -154,7 +155,7 @@ describe("market_get_product", () => {
   afterEach(() => {
     delete process.env.COINBASE_ADV_TRADE_API_KEY;
     delete process.env.COINBASE_ADV_TRADE_SECRET;
-    vi.unstubAllGlobals();
+    globalThis.fetch = originalFetch;
   });
 
   it("formats product info correctly", async () => {
@@ -194,7 +195,7 @@ describe("market_list_products", () => {
   afterEach(() => {
     delete process.env.COINBASE_ADV_TRADE_API_KEY;
     delete process.env.COINBASE_ADV_TRADE_SECRET;
-    vi.unstubAllGlobals();
+    globalThis.fetch = originalFetch;
   });
 
   it("formats product list", async () => {
@@ -218,7 +219,7 @@ describe("market_get_candles", () => {
   afterEach(() => {
     delete process.env.COINBASE_ADV_TRADE_API_KEY;
     delete process.env.COINBASE_ADV_TRADE_SECRET;
-    vi.unstubAllGlobals();
+    globalThis.fetch = originalFetch;
   });
 
   it("returns 'No candle data' when empty array returned", async () => {
@@ -254,7 +255,7 @@ describe("market_get_orderbook", () => {
   afterEach(() => {
     delete process.env.COINBASE_ADV_TRADE_API_KEY;
     delete process.env.COINBASE_ADV_TRADE_SECRET;
-    vi.unstubAllGlobals();
+    globalThis.fetch = originalFetch;
   });
 
   it("formats bids and asks", async () => {
@@ -283,7 +284,7 @@ describe("market_list_orders", () => {
   afterEach(() => {
     delete process.env.COINBASE_ADV_TRADE_API_KEY;
     delete process.env.COINBASE_ADV_TRADE_SECRET;
-    vi.unstubAllGlobals();
+    globalThis.fetch = originalFetch;
   });
 
   it("returns 'No orders found' when empty", async () => {
@@ -312,7 +313,7 @@ describe("market_cancel_orders", () => {
   afterEach(() => {
     delete process.env.COINBASE_ADV_TRADE_API_KEY;
     delete process.env.COINBASE_ADV_TRADE_SECRET;
-    vi.unstubAllGlobals();
+    globalThis.fetch = originalFetch;
   });
 
   it("shows cancellation results", async () => {
@@ -335,7 +336,7 @@ describe("market_get_fills", () => {
   afterEach(() => {
     delete process.env.COINBASE_ADV_TRADE_API_KEY;
     delete process.env.COINBASE_ADV_TRADE_SECRET;
-    vi.unstubAllGlobals();
+    globalThis.fetch = originalFetch;
   });
 
   it("returns 'No fills found' when empty", async () => {
@@ -369,7 +370,7 @@ describe("market_create_order — success", () => {
   afterEach(() => {
     delete process.env.COINBASE_ADV_TRADE_API_KEY;
     delete process.env.COINBASE_ADV_TRADE_SECRET;
-    vi.unstubAllGlobals();
+    globalThis.fetch = originalFetch;
   });
 
   it("returns order details on success", async () => {
@@ -417,7 +418,7 @@ describe("market_get_order", () => {
   afterEach(() => {
     delete process.env.COINBASE_ADV_TRADE_API_KEY;
     delete process.env.COINBASE_ADV_TRADE_SECRET;
-    vi.unstubAllGlobals();
+    globalThis.fetch = originalFetch;
   });
 
   it("returns order details", async () => {
