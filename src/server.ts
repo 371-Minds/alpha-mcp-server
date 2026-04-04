@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // Alpha MCP Server — Superintelligence Co-Pilot
 // Combines GPU-Bridge AI services with Coinbase DeFi, wallet, payments, portfolio and market tools
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";

@@ -60,7 +60,9 @@ describe("gpu_payment_chains", () => {
 
   it("shows x402 auto-payment disabled when wallet key is absent", async () => {
     const result = await gpuModule.handle("gpu_payment_chains", {});
+    // GPUBRIDGE_WALLET_KEY is not set in this test context, so auto-payment should be disabled
     expect(result.content[0].text).toContain("auto-payment");
+    expect(result.content[0].text).toContain("disabled");
   });
 });
 
