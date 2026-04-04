@@ -26,7 +26,7 @@ This architecture describes an autonomous company where:
 │                                                                 │
 │  System prompt = backstory + retrieved memories + task context  │
 └────────────────────────┬────────────────────────────────────────┘
-                         │ MCP client (stdio or HTTP/SSE)
+                         │ MCP client (stdio; HTTP/SSE via separate wrapper if needed)
          ┌───────────────┴──────────────────────┐
          │                                      │
          ▼                                      ▼
@@ -40,9 +40,9 @@ This architecture describes an autonomous company where:
 │    Pyth, Across)    │            │  subagent-N (infinite)      │
 │  • Payments (x402,  │            │                             │
 │    Commerce)        │            │  Each: AgentKit instance +  │
-│  • Portfolio        │            │  @coinbase/agentkit-mcp     │
-│  • Markets          │            │  wrapped as MCP server      │
-│  • Docs             │            │                             │
+│  • Portfolio        │            │  @coinbase/agentkit-model-  │
+│  • Markets          │            │  context-protocol wrapped   │
+│  • Docs             │            │  as MCP server              │
 └─────────────────────┘            └─────────────────────────────┘
 ```
 
@@ -90,16 +90,16 @@ master-agent/
 
 This repository serves as the **onchain and AI capability layer** for the master orchestrator. It is consumed via the Model Context Protocol (MCP) and requires no modification to work in this architecture.
 
-**Role:** Provides 48 tools the master can call directly, including all on-chain transaction capabilities.
+**Role:** Provides a broad set of tools the master can call directly, including all on-chain transaction capabilities.
 
 **On-chain tools used for transaction-capable agents:**
 
 | Tool Group | Tools | Use Case |
 |---|---|---|
-| CDP Wallets | `cdp_create_account`, `cdp_transfer`, `cdp_swap_tokens` | Execute transactions, move assets |
-| DeFi | `morpho_deposit`, `morpho_borrow`, `across_bridge` | Yield, leverage, cross-chain |
-| Payments | `x402_pay`, `commerce_create_charge` | Pay for services, receive payments |
-| Markets | `create_order`, `cancel_order` | Trading, treasury management |
+| CDP Wallets | `cdp_create_account`, `cdp_send_transaction`, `cdp_create_swap` | Execute transactions, move assets |
+| DeFi | `defi_morpho_deposit`, `defi_across_bridge` | Yield, leverage, cross-chain |
+| Payments | `pay_create_charge` | Pay for services, receive payments |
+| Markets | `market_create_order`, `market_cancel_orders` | Trading, treasury management |
 
 **Connection from master:**
 ```jsonc
@@ -120,7 +120,7 @@ This repository serves as the **onchain and AI capability layer** for the master
 }
 ```
 
-Or, using a `bun --compile` binary for faster cold-start (see [Bun Distribution](#bun-distribution)):
+Or, using a binary compiled with `bun build --compile` for faster cold-start (see [Bun Distribution](#bun-distribution)):
 ```jsonc
 {
   "mcpServers": {
@@ -237,7 +237,7 @@ On-chain work is executed by the master via the alpha-mcp-server tool calls — 
 ```
 Master decides to execute transaction
   → calls cdp_create_account (or reuses existing wallet from memory)
-  → calls cdp_transfer / cdp_swap / morpho_deposit / etc.
+  → calls cdp_send_transaction / cdp_create_swap / defi_morpho_deposit / etc.
   → receives transaction hash
   → writes transaction record to memory layer
   → continues decision loop
@@ -274,8 +274,10 @@ wallet-pool.ts
     │ On-chain                            │ Off-chain
     ▼                                     ▼
 [alpha-mcp-server tool call]      [Spawn AgentKit subagent]
-  cdp_transfer, morpho_deposit,     subagent-research,
-  x402_pay, create_order, etc.      subagent-enrich, etc.
+  cdp_send_transaction,           subagent-research,
+  defi_morpho_deposit,            subagent-enrich, etc.
+  pay_create_charge,
+  market_create_order, etc.
     │                                     │
     ▼                                     ▼
 [Transaction hash / result]       [Task result]
@@ -348,7 +350,7 @@ The compiled binary is optimal for spawned subagents where cold-start latency co
 | Capability Layer | alpha-mcp-server (this repo) |
 | On-chain Execution | Coinbase CDP SDK (via alpha-mcp-server) |
 | Off-chain Subagents | AgentKit + @coinbase/agentkit-model-context-protocol |
-| Agent Protocol | MCP (stdio or HTTP/SSE) |
+| Agent Protocol | MCP (stdio; HTTP/SSE via separate wrapper) |
 | Spawning Runtime | Bun (`Bun.spawn()` or Node `child_process`) |
 | Distribution | `bun build --compile` for subagent binaries |
 | Identity | Backstory MD files + voice training dataset |
