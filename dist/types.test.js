@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { ok, err, missingEnv } from "../src/types.js";
 describe("ok", () => {
     it("returns content array with the supplied text", () => {

@@ -1,37 +1,36 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { marketModule } from "./market.js";
+import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
 // ---------------------------------------------------------------------------
 // Mock node:crypto so generateJWT never tries to sign with a real PEM key
 // ---------------------------------------------------------------------------
-vi.mock("node:crypto", async (importOriginal) => {
-    const actual = await importOriginal();
+mock.module("node:crypto", () => {
     return {
-        ...actual,
-        createSign: vi.fn().mockReturnValue({
-            update: vi.fn().mockReturnThis(),
-            sign: vi.fn().mockReturnValue(Buffer.from("fakesignature")),
+        createSign: mock().mockReturnValue({
+            update: mock().mockReturnThis(),
+            sign: mock().mockReturnValue(Buffer.from("fakesignature")),
         }),
-        randomBytes: vi.fn().mockReturnValue(Buffer.from("deadbeefdeadbeef", "hex")),
+        randomBytes: mock().mockReturnValue(Buffer.from("deadbeefdeadbeef", "hex")),
     };
 });
+import { marketModule } from "./market.js";
+const originalFetch = globalThis.fetch;
 // A placeholder key string — generateJWT will use it but crypto is mocked
 const FAKE_SECRET = "-----BEGIN EC PRIVATE KEY-----\nMHQCAQEEIMockKey\n-----END EC PRIVATE KEY-----";
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 function stubFetchOk(body) {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+    globalThis.fetch = mock().mockResolvedValue({
         ok: true,
         json: () => Promise.resolve(body),
         status: 200,
-    }));
+    });
 }
 function stubFetchError(status, body = "API Error") {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+    globalThis.fetch = mock().mockResolvedValue({
         ok: false,
         status,
         text: () => Promise.resolve(body),
-    }));
+    });
 }
 // ---------------------------------------------------------------------------
 // Module structure
@@ -74,7 +73,7 @@ describe("marketModule — missing credentials", () => {
     afterEach(() => {
         delete process.env.COINBASE_ADV_TRADE_API_KEY;
         delete process.env.COINBASE_ADV_TRADE_SECRET;
-        vi.unstubAllGlobals();
+        globalThis.fetch = originalFetch;
     });
     for (const toolName of credProtectedTools) {
         it(`${toolName} returns isError when creds absent`, async () => {
@@ -102,7 +101,7 @@ describe("market_create_order — input validation", () => {
     afterEach(() => {
         delete process.env.COINBASE_ADV_TRADE_API_KEY;
         delete process.env.COINBASE_ADV_TRADE_SECRET;
-        vi.unstubAllGlobals();
+        globalThis.fetch = originalFetch;
     });
     it("returns error when limit_price is missing for limit orders", async () => {
         const result = await marketModule.handle("market_create_order", {
@@ -132,7 +131,7 @@ describe("market_get_product", () => {
     afterEach(() => {
         delete process.env.COINBASE_ADV_TRADE_API_KEY;
         delete process.env.COINBASE_ADV_TRADE_SECRET;
-        vi.unstubAllGlobals();
+        globalThis.fetch = originalFetch;
     });
     it("formats product info correctly", async () => {
         process.env.COINBASE_ADV_TRADE_API_KEY = "test-key";
@@ -169,7 +168,7 @@ describe("market_list_products", () => {
     afterEach(() => {
         delete process.env.COINBASE_ADV_TRADE_API_KEY;
         delete process.env.COINBASE_ADV_TRADE_SECRET;
-        vi.unstubAllGlobals();
+        globalThis.fetch = originalFetch;
     });
     it("formats product list", async () => {
         process.env.COINBASE_ADV_TRADE_API_KEY = "test-key";
@@ -191,7 +190,7 @@ describe("market_get_candles", () => {
     afterEach(() => {
         delete process.env.COINBASE_ADV_TRADE_API_KEY;
         delete process.env.COINBASE_ADV_TRADE_SECRET;
-        vi.unstubAllGlobals();
+        globalThis.fetch = originalFetch;
     });
     it("returns 'No candle data' when empty array returned", async () => {
         process.env.COINBASE_ADV_TRADE_API_KEY = "test-key";
@@ -224,7 +223,7 @@ describe("market_get_orderbook", () => {
     afterEach(() => {
         delete process.env.COINBASE_ADV_TRADE_API_KEY;
         delete process.env.COINBASE_ADV_TRADE_SECRET;
-        vi.unstubAllGlobals();
+        globalThis.fetch = originalFetch;
     });
     it("formats bids and asks", async () => {
         process.env.COINBASE_ADV_TRADE_API_KEY = "test-key";
@@ -250,7 +249,7 @@ describe("market_list_orders", () => {
     afterEach(() => {
         delete process.env.COINBASE_ADV_TRADE_API_KEY;
         delete process.env.COINBASE_ADV_TRADE_SECRET;
-        vi.unstubAllGlobals();
+        globalThis.fetch = originalFetch;
     });
     it("returns 'No orders found' when empty", async () => {
         process.env.COINBASE_ADV_TRADE_API_KEY = "test-key";
@@ -276,7 +275,7 @@ describe("market_cancel_orders", () => {
     afterEach(() => {
         delete process.env.COINBASE_ADV_TRADE_API_KEY;
         delete process.env.COINBASE_ADV_TRADE_SECRET;
-        vi.unstubAllGlobals();
+        globalThis.fetch = originalFetch;
     });
     it("shows cancellation results", async () => {
         process.env.COINBASE_ADV_TRADE_API_KEY = "test-key";
@@ -297,7 +296,7 @@ describe("market_get_fills", () => {
     afterEach(() => {
         delete process.env.COINBASE_ADV_TRADE_API_KEY;
         delete process.env.COINBASE_ADV_TRADE_SECRET;
-        vi.unstubAllGlobals();
+        globalThis.fetch = originalFetch;
     });
     it("returns 'No fills found' when empty", async () => {
         process.env.COINBASE_ADV_TRADE_API_KEY = "test-key";
@@ -327,7 +326,7 @@ describe("market_create_order — success", () => {
     afterEach(() => {
         delete process.env.COINBASE_ADV_TRADE_API_KEY;
         delete process.env.COINBASE_ADV_TRADE_SECRET;
-        vi.unstubAllGlobals();
+        globalThis.fetch = originalFetch;
     });
     it("returns order details on success", async () => {
         process.env.COINBASE_ADV_TRADE_API_KEY = "test-key";
@@ -371,7 +370,7 @@ describe("market_get_order", () => {
     afterEach(() => {
         delete process.env.COINBASE_ADV_TRADE_API_KEY;
         delete process.env.COINBASE_ADV_TRADE_SECRET;
-        vi.unstubAllGlobals();
+        globalThis.fetch = originalFetch;
     });
     it("returns order details", async () => {
         process.env.COINBASE_ADV_TRADE_API_KEY = "test-key";

@@ -1,14 +1,17 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, mock, afterEach } from "bun:test";
 import { docsModule } from "./docs.js";
+const originalFetch = globalThis.fetch;
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 function stubFetchText(status, body) {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+    const m = mock().mockResolvedValue({
         ok: status >= 200 && status < 300,
         status,
         text: () => Promise.resolve(body),
-    }));
+    });
+    globalThis.fetch = m;
+    return m;
 }
 // ---------------------------------------------------------------------------
 // Module structure
@@ -43,7 +46,7 @@ describe("docs_fetch — unknown topic", () => {
 // HTTP error from upstream
 // ---------------------------------------------------------------------------
 describe("docs_fetch — upstream HTTP error", () => {
-    afterEach(() => { vi.unstubAllGlobals(); });
+    afterEach(() => { globalThis.fetch = originalFetch; });
     it("returns isError when upstream returns non-ok status", async () => {
         stubFetchText(503, "Service Unavailable");
         const result = await docsModule.handle("docs_fetch", { topic: "x402-payment-identifier" });
@@ -55,9 +58,9 @@ describe("docs_fetch — upstream HTTP error", () => {
 // Fetch error (network failure)
 // ---------------------------------------------------------------------------
 describe("docs_fetch — network failure", () => {
-    afterEach(() => { vi.unstubAllGlobals(); });
+    afterEach(() => { globalThis.fetch = originalFetch; });
     it("returns isError on fetch exception", async () => {
-        vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("ECONNREFUSED")));
+        globalThis.fetch = mock().mockRejectedValue(new Error("ECONNREFUSED"));
         const result = await docsModule.handle("docs_fetch", { topic: "x402-payment-identifier" });
         expect(result.isError).toBe(true);
         expect(result.content[0].text).toContain("ECONNREFUSED");
@@ -67,7 +70,7 @@ describe("docs_fetch — network failure", () => {
 // Successful fetch
 // ---------------------------------------------------------------------------
 describe("docs_fetch — happy path", () => {
-    afterEach(() => { vi.unstubAllGlobals(); });
+    afterEach(() => { globalThis.fetch = originalFetch; });
     it("returns topic title and source URL in output", async () => {
         stubFetchText(200, "<html><body><h1>Payment Identifier</h1><p>Some spec content.</p></body></html>");
         const result = await docsModule.handle("docs_fetch", { topic: "x402-payment-identifier" });
@@ -104,7 +107,7 @@ describe("docs_fetch — happy path", () => {
 // All valid topics are accessible
 // ---------------------------------------------------------------------------
 describe("docs_fetch — all valid topics resolve to a URL", () => {
-    afterEach(() => { vi.unstubAllGlobals(); });
+    afterEach(() => { globalThis.fetch = originalFetch; });
     const validTopics = [
         "x402-payment-identifier",
         "x402-offer-receipt",
@@ -115,10 +118,9 @@ describe("docs_fetch — all valid topics resolve to a URL", () => {
     ];
     for (const topic of validTopics) {
         it(`topic '${topic}' fetches from a valid URL`, async () => {
-            stubFetchText(200, "content");
+            const fetchMock = stubFetchText(200, "content");
             const result = await docsModule.handle("docs_fetch", { topic });
             expect(result.isError).toBeFalsy();
-            const fetchMock = vi.mocked(global.fetch);
             const calledUrl = fetchMock.mock.calls[0][0];
             expect(calledUrl).toMatch(/^https?:\/\//);
         });

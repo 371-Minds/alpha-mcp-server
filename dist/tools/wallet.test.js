@@ -1,32 +1,29 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { walletModule } from "./wallet.js";
+import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
 // ---------------------------------------------------------------------------
 // Mock @coinbase/cdp-sdk so tests never hit the real API
 // ---------------------------------------------------------------------------
-vi.mock("@coinbase/cdp-sdk", () => {
+mock.module("@coinbase/cdp-sdk", () => {
     const mockEvm = {
-        createAccount: vi.fn(),
-        getAccount: vi.fn(),
-        listTokenBalances: vi.fn(),
-        sendTransaction: vi.fn(),
-        signMessage: vi.fn(),
-        exportAccount: vi.fn(),
-        requestFaucet: vi.fn(),
-        getSwapPrice: vi.fn(),
-        createSwapQuote: vi.fn(),
+        createAccount: mock(),
+        getAccount: mock(),
+        listTokenBalances: mock(),
+        sendTransaction: mock(),
+        signMessage: mock(),
+        exportAccount: mock(),
+        requestFaucet: mock(),
+        getSwapPrice: mock(),
+        createSwapQuote: mock(),
     };
-    const CdpClient = vi.fn().mockImplementation(() => ({ evm: mockEvm }));
+    const CdpClient = mock().mockImplementation(() => ({ evm: mockEvm }));
     return { CdpClient };
 });
+import { walletModule } from "./wallet.js";
+import { CdpClient } from "@coinbase/cdp-sdk";
 // ---------------------------------------------------------------------------
 // Helpers to get the mocked evm object
 // ---------------------------------------------------------------------------
-import { CdpClient } from "@coinbase/cdp-sdk";
 function getMockEvm() {
-    // The mock implementation returns an object with evm; grab it from any instance
-    const instance = CdpClient.mock.results?.[0]?.value
-        ?? new CdpClient();
-    return instance.evm;
+    return new CdpClient().evm;
 }
 // ---------------------------------------------------------------------------
 // Module structure

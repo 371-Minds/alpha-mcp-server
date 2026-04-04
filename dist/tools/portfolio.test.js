@@ -1,22 +1,25 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
 import { portfolioModule } from "./portfolio.js";
+const originalFetch = globalThis.fetch;
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 function stubFetchOk(body) {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+    const m = mock().mockResolvedValue({
         ok: true,
         json: () => Promise.resolve(body),
         text: () => Promise.resolve(JSON.stringify(body)),
         status: 200,
-    }));
+    });
+    globalThis.fetch = m;
+    return m;
 }
 function stubFetchError(status) {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+    globalThis.fetch = mock().mockResolvedValue({
         ok: false,
         status,
         text: () => Promise.resolve("Error body"),
-    }));
+    });
 }
 // ---------------------------------------------------------------------------
 // Module structure
@@ -53,7 +56,7 @@ describe("cb_exchange_token — missing credentials", () => {
     afterEach(() => {
         delete process.env.COINBASE_CLIENT_ID;
         delete process.env.COINBASE_CLIENT_SECRET;
-        vi.unstubAllGlobals();
+        globalThis.fetch = originalFetch;
     });
     it("returns isError when COINBASE_CLIENT_ID absent", async () => {
         delete process.env.COINBASE_CLIENT_ID;
@@ -152,7 +155,7 @@ describe("cb_exchange_token — token exchange failure", () => {
     afterEach(() => {
         delete process.env.COINBASE_CLIENT_ID;
         delete process.env.COINBASE_CLIENT_SECRET;
-        vi.unstubAllGlobals();
+        globalThis.fetch = originalFetch;
     });
     it("returns isError on HTTP failure", async () => {
         const result = await portfolioModule.handle("cb_exchange_token", {
@@ -183,7 +186,7 @@ describe("cb_get_user — happy path", () => {
     });
     afterEach(() => {
         delete process.env.COINBASE_OAUTH_TOKEN;
-        vi.unstubAllGlobals();
+        globalThis.fetch = originalFetch;
     });
     it("returns user profile info", async () => {
         const result = await portfolioModule.handle("cb_get_user", {});
@@ -199,7 +202,7 @@ describe("cb_get_user — happy path", () => {
 describe("cb_get_accounts", () => {
     afterEach(() => {
         delete process.env.COINBASE_OAUTH_TOKEN;
-        vi.unstubAllGlobals();
+        globalThis.fetch = originalFetch;
     });
     it("returns 'No accounts found' when list is empty", async () => {
         process.env.COINBASE_OAUTH_TOKEN = "test-token";
@@ -248,7 +251,7 @@ describe("cb_get_accounts", () => {
 describe("cb_get_transactions", () => {
     afterEach(() => {
         delete process.env.COINBASE_OAUTH_TOKEN;
-        vi.unstubAllGlobals();
+        globalThis.fetch = originalFetch;
     });
     it("returns 'No transactions found' when empty", async () => {
         process.env.COINBASE_OAUTH_TOKEN = "test-token";
@@ -288,7 +291,7 @@ describe("cb_get_transactions", () => {
 // cb_get_spot_price
 // ---------------------------------------------------------------------------
 describe("cb_get_spot_price", () => {
-    afterEach(() => { vi.unstubAllGlobals(); });
+    afterEach(() => { globalThis.fetch = originalFetch; });
     it("returns formatted spot price", async () => {
         stubFetchOk({ data: { base: "BTC", currency: "USD", amount: "65432.10" } });
         const result = await portfolioModule.handle("cb_get_spot_price", { currency_pair: "BTC-USD" });
@@ -308,7 +311,7 @@ describe("cb_get_spot_price", () => {
 // cb_get_exchange_rates
 // ---------------------------------------------------------------------------
 describe("cb_get_exchange_rates", () => {
-    afterEach(() => { vi.unstubAllGlobals(); });
+    afterEach(() => { globalThis.fetch = originalFetch; });
     it("returns exchange rates for the base currency", async () => {
         stubFetchOk({
             data: {
@@ -323,9 +326,8 @@ describe("cb_get_exchange_rates", () => {
         expect(result.content[0].text).toContain("ETH");
     });
     it("uses USD as default currency", async () => {
-        stubFetchOk({ data: { currency: "USD", rates: { BTC: "0.000015" } } });
+        const fetchMock = stubFetchOk({ data: { currency: "USD", rates: { BTC: "0.000015" } } });
         await portfolioModule.handle("cb_get_exchange_rates", {});
-        const fetchMock = vi.mocked(global.fetch);
         expect(fetchMock.mock.calls[0][0]).toContain("currency=USD");
     });
     it("returns isError on HTTP failure", async () => {

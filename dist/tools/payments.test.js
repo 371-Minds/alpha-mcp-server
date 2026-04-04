@@ -1,23 +1,26 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
 import { paymentsModule } from "./payments.js";
+const originalFetch = globalThis.fetch;
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 function stubCommerceOk(responseData) {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+    const m = mock().mockResolvedValue({
         ok: true,
         json: () => Promise.resolve(responseData),
         text: () => Promise.resolve(JSON.stringify(responseData)),
         status: 200,
-        headers: { forEach: vi.fn() },
-    }));
+        headers: { forEach: mock() },
+    });
+    globalThis.fetch = m;
+    return m;
 }
 function stubCommerceError(status, body) {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+    globalThis.fetch = mock().mockResolvedValue({
         ok: false,
         status,
         text: () => Promise.resolve(body),
-    }));
+    });
 }
 // ---------------------------------------------------------------------------
 // Module structure
@@ -51,7 +54,7 @@ const commerceTools = [
 ];
 describe("payments — missing COINBASE_COMMERCE_API_KEY", () => {
     beforeEach(() => { delete process.env.COINBASE_COMMERCE_API_KEY; });
-    afterEach(() => { delete process.env.COINBASE_COMMERCE_API_KEY; vi.unstubAllGlobals(); });
+    afterEach(() => { delete process.env.COINBASE_COMMERCE_API_KEY; globalThis.fetch = originalFetch; });
     for (const toolName of commerceTools) {
         it(`${toolName} returns isError`, async () => {
             const result = await paymentsModule.handle(toolName, {
@@ -67,9 +70,10 @@ describe("payments — missing COINBASE_COMMERCE_API_KEY", () => {
 // pay_create_charge — happy path
 // ---------------------------------------------------------------------------
 describe("pay_create_charge", () => {
+    let fetchMock;
     beforeEach(() => {
         process.env.COINBASE_COMMERCE_API_KEY = "test-commerce-key";
-        stubCommerceOk({
+        fetchMock = stubCommerceOk({
             data: {
                 id: "charge-001",
                 code: "ABC123",
@@ -80,7 +84,7 @@ describe("pay_create_charge", () => {
     });
     afterEach(() => {
         delete process.env.COINBASE_COMMERCE_API_KEY;
-        vi.unstubAllGlobals();
+        globalThis.fetch = originalFetch;
     });
     it("returns charge id, code, and hosted url", async () => {
         const result = await paymentsModule.handle("pay_create_charge", {
@@ -102,7 +106,6 @@ describe("pay_create_charge", () => {
             redirect_url: "https://myapp.com/success",
             cancel_url: "https://myapp.com/cancel",
         });
-        const fetchMock = vi.mocked(global.fetch);
         const bodyArg = JSON.parse(fetchMock.mock.calls[0][1]?.body);
         expect(bodyArg.redirect_url).toBe("https://myapp.com/success");
         expect(bodyArg.cancel_url).toBe("https://myapp.com/cancel");
@@ -114,7 +117,6 @@ describe("pay_create_charge", () => {
             amount: "5.00",
             metadata: { user_id: "u123" },
         });
-        const fetchMock = vi.mocked(global.fetch);
         const bodyArg = JSON.parse(fetchMock.mock.calls[0][1]?.body);
         expect(bodyArg.metadata).toEqual({ user_id: "u123" });
     });
@@ -142,7 +144,7 @@ describe("pay_get_charge", () => {
     });
     afterEach(() => {
         delete process.env.COINBASE_COMMERCE_API_KEY;
-        vi.unstubAllGlobals();
+        globalThis.fetch = originalFetch;
     });
     it("shows status, price, and timeline", async () => {
         const result = await paymentsModule.handle("pay_get_charge", { charge_id: "charge-abc" });
@@ -158,7 +160,7 @@ describe("pay_get_charge", () => {
 describe("pay_list_charges", () => {
     afterEach(() => {
         delete process.env.COINBASE_COMMERCE_API_KEY;
-        vi.unstubAllGlobals();
+        globalThis.fetch = originalFetch;
     });
     it("returns 'No charges found' when list is empty", async () => {
         process.env.COINBASE_COMMERCE_API_KEY = "test-key";
@@ -197,7 +199,7 @@ describe("pay_create_checkout", () => {
     });
     afterEach(() => {
         delete process.env.COINBASE_COMMERCE_API_KEY;
-        vi.unstubAllGlobals();
+        globalThis.fetch = originalFetch;
     });
     it("returns checkout id and hosted url", async () => {
         const result = await paymentsModule.handle("pay_create_checkout", {
@@ -224,7 +226,7 @@ describe("pay_resolve_charge", () => {
     });
     afterEach(() => {
         delete process.env.COINBASE_COMMERCE_API_KEY;
-        vi.unstubAllGlobals();
+        globalThis.fetch = originalFetch;
     });
     it("confirms resolution with current status", async () => {
         const result = await paymentsModule.handle("pay_resolve_charge", {
@@ -241,7 +243,7 @@ describe("pay_resolve_charge", () => {
 describe("pay_list_events", () => {
     afterEach(() => {
         delete process.env.COINBASE_COMMERCE_API_KEY;
-        vi.unstubAllGlobals();
+        globalThis.fetch = originalFetch;
     });
     it("returns 'No events found' when empty", async () => {
         process.env.COINBASE_COMMERCE_API_KEY = "test-key";
@@ -265,12 +267,12 @@ describe("pay_list_events", () => {
 // pay_x402_check
 // ---------------------------------------------------------------------------
 describe("pay_x402_check", () => {
-    afterEach(() => { vi.unstubAllGlobals(); });
+    afterEach(() => { globalThis.fetch = originalFetch; });
     it("reports x402 not detected when status is 200", async () => {
-        vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+        globalThis.fetch = mock().mockResolvedValue({
             ok: true,
             status: 200,
-        }));
+        });
         const result = await paymentsModule.handle("pay_x402_check", { url: "https://example.com/api" });
         expect(result.isError).toBeFalsy();
         expect(result.content[0].text).toContain("Not detected");
@@ -281,12 +283,12 @@ describe("pay_x402_check", () => {
             ["x-payment-terms", "USDC 1.00"],
             ["www-authenticate", "x402"],
         ]);
-        vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+        globalThis.fetch = mock().mockResolvedValue({
             ok: false,
             status: 402,
             headers: { forEach: (cb) => fakeHeaders.forEach((v, k) => cb(v, k)) },
             text: () => Promise.resolve('{"amount":"1.00","currency":"USDC"}'),
-        }));
+        });
         const result = await paymentsModule.handle("pay_x402_check", { url: "https://api.example.com/svc" });
         expect(result.isError).toBeFalsy();
         expect(result.content[0].text).toContain("Detected");
@@ -294,7 +296,7 @@ describe("pay_x402_check", () => {
         expect(result.content[0].text).toContain("USDC 1.00");
     });
     it("handles fetch error gracefully", async () => {
-        vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Network error")));
+        globalThis.fetch = mock().mockRejectedValue(new Error("Network error"));
         const result = await paymentsModule.handle("pay_x402_check", { url: "https://unreachable.invalid" });
         expect(result.isError).toBe(true);
         expect(result.content[0].text).toContain("Network error");
@@ -307,7 +309,7 @@ describe("pay_create_charge — commerce API error", () => {
     beforeEach(() => { process.env.COINBASE_COMMERCE_API_KEY = "test-key"; });
     afterEach(() => {
         delete process.env.COINBASE_COMMERCE_API_KEY;
-        vi.unstubAllGlobals();
+        globalThis.fetch = originalFetch;
     });
     it("returns isError on Commerce API failure", async () => {
         stubCommerceError(422, "Unprocessable Entity");

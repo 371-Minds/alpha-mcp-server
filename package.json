@@ -11,10 +11,10 @@
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
-    "start": "node dist/server.js",
-    "prepare": "npm run build",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "start": "bun run src/server.ts",
+    "prepare": "bun run build",
+    "test": "bun test",
+    "test:watch": "bun test --watch"
   },
   "files": [
     "dist/",
@@ -58,7 +58,7 @@
     "url": "git+https://github.com/371-Minds/alpha-mcp-server.git"
   },
   "engines": {
-    "node": ">=18"
+    "bun": ">=1.0.0"
   },
   "dependencies": {
     "@coinbase/agentkit": "^0.10.4",
@@ -70,8 +70,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "typescript": "^6.0.2",
-    "vitest": "^2.1.9"
+    "typescript": "^6.0.2"
   },
   "mcpName": "io.github.371-minds/alpha-mcp-server"
 }
