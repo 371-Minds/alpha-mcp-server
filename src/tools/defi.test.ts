@@ -32,7 +32,10 @@ import {
   MorphoActionProvider,
 } from "@coinbase/agentkit";
 
-// Helper functions to get singleton mock instances from the factory closure
+// Helper functions to access the singleton mock instances created inside the
+// mock.module factory closure. Because mock.module creates each provider mock
+// once, every `new Provider()` call returns the same instance — so these
+// helpers return the same shared object used internally by defiModule.
 function getPythMock() {
   return new (PythActionProvider as any)() as { fetchPriceFeed: Mock<any>; fetchPrice: Mock<any> };
 }
