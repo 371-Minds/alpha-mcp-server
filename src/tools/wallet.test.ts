@@ -1,37 +1,34 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { walletModule } from "./wallet.js";
+import { describe, it, expect, mock, beforeEach, afterEach, type Mock } from "bun:test";
 
 // ---------------------------------------------------------------------------
 // Mock @coinbase/cdp-sdk so tests never hit the real API
 // ---------------------------------------------------------------------------
 
-vi.mock("@coinbase/cdp-sdk", () => {
+mock.module("@coinbase/cdp-sdk", () => {
   const mockEvm = {
-    createAccount: vi.fn(),
-    getAccount: vi.fn(),
-    listTokenBalances: vi.fn(),
-    sendTransaction: vi.fn(),
-    signMessage: vi.fn(),
-    exportAccount: vi.fn(),
-    requestFaucet: vi.fn(),
-    getSwapPrice: vi.fn(),
-    createSwapQuote: vi.fn(),
+    createAccount: mock(),
+    getAccount: mock(),
+    listTokenBalances: mock(),
+    sendTransaction: mock(),
+    signMessage: mock(),
+    exportAccount: mock(),
+    requestFaucet: mock(),
+    getSwapPrice: mock(),
+    createSwapQuote: mock(),
   };
-  const CdpClient = vi.fn().mockImplementation(() => ({ evm: mockEvm }));
+  const CdpClient = mock().mockImplementation(() => ({ evm: mockEvm }));
   return { CdpClient };
 });
+
+import { walletModule } from "./wallet.js";
+import { CdpClient } from "@coinbase/cdp-sdk";
 
 // ---------------------------------------------------------------------------
 // Helpers to get the mocked evm object
 // ---------------------------------------------------------------------------
 
-import { CdpClient } from "@coinbase/cdp-sdk";
-
 function getMockEvm() {
-  // The mock implementation returns an object with evm; grab it from any instance
-  const instance = (CdpClient as ReturnType<typeof vi.fn>).mock.results?.[0]?.value
-    ?? new (CdpClient as ReturnType<typeof vi.fn>)();
-  return instance.evm as Record<string, ReturnType<typeof vi.fn>>;
+  return (new CdpClient() as any).evm as Record<string, Mock<(...args: any[]) => any>>;
 }
 
 // ---------------------------------------------------------------------------
@@ -65,7 +62,7 @@ describe("walletModule — missing CDP credentials", () => {
   beforeEach(() => {
     delete process.env.CDP_API_KEY_ID;
     delete process.env.CDP_API_KEY_SECRET;
-    (CdpClient as ReturnType<typeof vi.fn>).mockClear();
+    (CdpClient as Mock<(...args: any[]) => any>).mockClear();
   });
 
   afterEach(() => {
@@ -106,7 +103,7 @@ describe("cdp_get_account — input validation", () => {
   beforeEach(() => {
     process.env.CDP_API_KEY_ID = "test-id";
     process.env.CDP_API_KEY_SECRET = "test-secret";
-    (CdpClient as ReturnType<typeof vi.fn>).mockClear();
+    (CdpClient as Mock<(...args: any[]) => any>).mockClear();
   });
 
   afterEach(() => {
@@ -127,7 +124,7 @@ describe("cdp_export_account — input validation", () => {
     process.env.CDP_API_KEY_ID = "test-id";
     process.env.CDP_API_KEY_SECRET = "test-secret";
     process.env.CDP_WALLET_SECRET = "test-wallet-secret";
-    (CdpClient as ReturnType<typeof vi.fn>).mockClear();
+    (CdpClient as Mock<(...args: any[]) => any>).mockClear();
   });
 
   afterEach(() => {
@@ -146,7 +143,7 @@ describe("cdp_get_swap_price — requires taker_address", () => {
   beforeEach(() => {
     process.env.CDP_API_KEY_ID = "test-id";
     process.env.CDP_API_KEY_SECRET = "test-secret";
-    (CdpClient as ReturnType<typeof vi.fn>).mockClear();
+    (CdpClient as Mock<(...args: any[]) => any>).mockClear();
   });
 
   afterEach(() => {
@@ -174,7 +171,7 @@ describe("cdp_send_transaction — missing CDP_WALLET_SECRET", () => {
     process.env.CDP_API_KEY_ID = "test-id";
     process.env.CDP_API_KEY_SECRET = "test-secret";
     delete process.env.CDP_WALLET_SECRET;
-    (CdpClient as ReturnType<typeof vi.fn>).mockClear();
+    (CdpClient as Mock<(...args: any[]) => any>).mockClear();
   });
 
   afterEach(() => {
@@ -199,7 +196,7 @@ describe("cdp_sign_message — missing CDP_WALLET_SECRET", () => {
     process.env.CDP_API_KEY_ID = "test-id";
     process.env.CDP_API_KEY_SECRET = "test-secret";
     delete process.env.CDP_WALLET_SECRET;
-    (CdpClient as ReturnType<typeof vi.fn>).mockClear();
+    (CdpClient as Mock<(...args: any[]) => any>).mockClear();
   });
 
   afterEach(() => {
@@ -226,7 +223,7 @@ describe("cdp_create_account — output formatting", () => {
   beforeEach(() => {
     process.env.CDP_API_KEY_ID = "test-id";
     process.env.CDP_API_KEY_SECRET = "test-secret";
-    (CdpClient as ReturnType<typeof vi.fn>).mockClear();
+    (CdpClient as Mock<(...args: any[]) => any>).mockClear();
     const evm = getMockEvm();
     evm.createAccount.mockResolvedValue({ address: "0xABCD", name: "my-wallet" });
   });
@@ -248,7 +245,7 @@ describe("cdp_list_balances — output formatting", () => {
   beforeEach(() => {
     process.env.CDP_API_KEY_ID = "test-id";
     process.env.CDP_API_KEY_SECRET = "test-secret";
-    (CdpClient as ReturnType<typeof vi.fn>).mockClear();
+    (CdpClient as Mock<(...args: any[]) => any>).mockClear();
   });
 
   afterEach(() => {
@@ -305,7 +302,7 @@ describe("cdp_request_faucet — output formatting", () => {
   beforeEach(() => {
     process.env.CDP_API_KEY_ID = "test-id";
     process.env.CDP_API_KEY_SECRET = "test-secret";
-    (CdpClient as ReturnType<typeof vi.fn>).mockClear();
+    (CdpClient as Mock<(...args: any[]) => any>).mockClear();
     const evm = getMockEvm();
     evm.requestFaucet.mockResolvedValue({ transactionHash: "0xhash123" });
   });
@@ -327,7 +324,7 @@ describe("cdp_get_swap_price — no liquidity available", () => {
   beforeEach(() => {
     process.env.CDP_API_KEY_ID = "test-id";
     process.env.CDP_API_KEY_SECRET = "test-secret";
-    (CdpClient as ReturnType<typeof vi.fn>).mockClear();
+    (CdpClient as Mock<(...args: any[]) => any>).mockClear();
     const evm = getMockEvm();
     evm.getSwapPrice.mockResolvedValue({ liquidityAvailable: false });
   });
@@ -353,7 +350,7 @@ describe("cdp_get_swap_price — success", () => {
   beforeEach(() => {
     process.env.CDP_API_KEY_ID = "test-id";
     process.env.CDP_API_KEY_SECRET = "test-secret";
-    (CdpClient as ReturnType<typeof vi.fn>).mockClear();
+    (CdpClient as Mock<(...args: any[]) => any>).mockClear();
     const evm = getMockEvm();
     evm.getSwapPrice.mockResolvedValue({
       liquidityAvailable: true,
@@ -385,7 +382,7 @@ describe("cdp_create_swap — no liquidity available", () => {
     process.env.CDP_API_KEY_ID = "test-id";
     process.env.CDP_API_KEY_SECRET = "test-secret";
     process.env.CDP_WALLET_SECRET = "test-wallet-secret";
-    (CdpClient as ReturnType<typeof vi.fn>).mockClear();
+    (CdpClient as Mock<(...args: any[]) => any>).mockClear();
     const evm = getMockEvm();
     evm.createSwapQuote.mockResolvedValue({ liquidityAvailable: false });
   });
@@ -413,7 +410,7 @@ describe("cdp_create_swap — no transaction data in quote", () => {
     process.env.CDP_API_KEY_ID = "test-id";
     process.env.CDP_API_KEY_SECRET = "test-secret";
     process.env.CDP_WALLET_SECRET = "test-wallet-secret";
-    (CdpClient as ReturnType<typeof vi.fn>).mockClear();
+    (CdpClient as Mock<(...args: any[]) => any>).mockClear();
     const evm = getMockEvm();
     evm.createSwapQuote.mockResolvedValue({ liquidityAvailable: true, transaction: null });
   });
@@ -444,7 +441,7 @@ describe("wallet unknown tool", () => {
   beforeEach(() => {
     process.env.CDP_API_KEY_ID = "test-id";
     process.env.CDP_API_KEY_SECRET = "test-secret";
-    (CdpClient as ReturnType<typeof vi.fn>).mockClear();
+    (CdpClient as Mock<(...args: any[]) => any>).mockClear();
   });
 
   afterEach(() => {

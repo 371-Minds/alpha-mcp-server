@@ -1,37 +1,50 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, mock, beforeEach, afterEach, type Mock } from "bun:test";
+
+const originalFetch = globalThis.fetch;
+
+// ---------------------------------------------------------------------------
+// Mock @coinbase/agentkit — define mock instances inside the factory
+// ---------------------------------------------------------------------------
+
+mock.module("@coinbase/agentkit", () => {
+  const mockPythInstance = { fetchPriceFeed: mock(), fetchPrice: mock() };
+  const mockMessariInstance = { researchQuestion: mock() };
+  const mockFarcasterInstance = { postCast: mock(), accountDetails: mock() };
+  const mockMorphoInstance = { deposit: mock(), withdraw: mock() };
+  const mockWalletProvider = {};
+
+  return {
+    PythActionProvider: mock().mockImplementation(() => mockPythInstance),
+    MessariActionProvider: mock().mockImplementation(() => mockMessariInstance),
+    FarcasterActionProvider: mock().mockImplementation(() => mockFarcasterInstance),
+    MorphoActionProvider: mock().mockImplementation(() => mockMorphoInstance),
+    CdpEvmWalletProvider: {
+      configureWithWallet: mock().mockResolvedValue(mockWalletProvider),
+    },
+  };
+});
+
 import { defiModule } from "./defi.js";
+import {
+  PythActionProvider,
+  MessariActionProvider,
+  FarcasterActionProvider,
+  MorphoActionProvider,
+} from "@coinbase/agentkit";
 
-// ---------------------------------------------------------------------------
-// Use vi.hoisted() so these variables are available inside vi.mock() factories
-// ---------------------------------------------------------------------------
-
-const {
-  mockPythInstance,
-  mockMessariInstance,
-  mockFarcasterInstance,
-  mockMorphoInstance,
-  mockWalletProvider,
-} = vi.hoisted(() => ({
-  mockPythInstance: { fetchPriceFeed: vi.fn(), fetchPrice: vi.fn() },
-  mockMessariInstance: { researchQuestion: vi.fn() },
-  mockFarcasterInstance: { postCast: vi.fn(), accountDetails: vi.fn() },
-  mockMorphoInstance: { deposit: vi.fn(), withdraw: vi.fn() },
-  mockWalletProvider: {},
-}));
-
-// ---------------------------------------------------------------------------
-// Mock @coinbase/agentkit
-// ---------------------------------------------------------------------------
-
-vi.mock("@coinbase/agentkit", () => ({
-  PythActionProvider: vi.fn().mockImplementation(() => mockPythInstance),
-  MessariActionProvider: vi.fn().mockImplementation(() => mockMessariInstance),
-  FarcasterActionProvider: vi.fn().mockImplementation(() => mockFarcasterInstance),
-  MorphoActionProvider: vi.fn().mockImplementation(() => mockMorphoInstance),
-  CdpEvmWalletProvider: {
-    configureWithWallet: vi.fn().mockResolvedValue(mockWalletProvider),
-  },
-}));
+// Helper functions to get singleton mock instances from the factory closure
+function getPythMock() {
+  return new (PythActionProvider as any)() as { fetchPriceFeed: Mock<any>; fetchPrice: Mock<any> };
+}
+function getMessariMock() {
+  return new (MessariActionProvider as any)() as { researchQuestion: Mock<any> };
+}
+function getFarcasterMock() {
+  return new (FarcasterActionProvider as any)() as { postCast: Mock<any>; accountDetails: Mock<any> };
+}
+function getMorphoMock() {
+  return new (MorphoActionProvider as any)() as { deposit: Mock<any>; withdraw: Mock<any> };
+}
 
 // ---------------------------------------------------------------------------
 // Module structure
@@ -161,7 +174,7 @@ describe("bazaar_call — missing wallet key", () => {
 
 describe("defi_pyth_price_feed — happy path", () => {
   beforeEach(() => {
-    mockPythInstance.fetchPriceFeed.mockResolvedValue("0xpricefeedid");
+    getPythMock().fetchPriceFeed.mockResolvedValue("0xpricefeedid");
   });
 
   it("returns price feed ID", async () => {
@@ -173,7 +186,7 @@ describe("defi_pyth_price_feed — happy path", () => {
 
 describe("defi_pyth_price — happy path", () => {
   beforeEach(() => {
-    mockPythInstance.fetchPrice.mockResolvedValue("$65000.00");
+    getPythMock().fetchPrice.mockResolvedValue("$65000.00");
   });
 
   it("returns current price", async () => {
@@ -186,7 +199,7 @@ describe("defi_pyth_price — happy path", () => {
 describe("defi_messari_research — happy path", () => {
   beforeEach(() => {
     process.env.MESSARI_API_KEY = "test-key";
-    mockMessariInstance.researchQuestion.mockResolvedValue("Aave TVL is $5B");
+    getMessariMock().researchQuestion.mockResolvedValue("Aave TVL is $5B");
   });
 
   afterEach(() => { delete process.env.MESSARI_API_KEY; });
@@ -202,7 +215,7 @@ describe("defi_farcaster_post — happy path", () => {
   beforeEach(() => {
     process.env.NEYNAR_API_KEY = "test-key";
     process.env.NEYNAR_SIGNER_UUID = "test-uuid";
-    mockFarcasterInstance.postCast.mockResolvedValue("Cast posted!");
+    getFarcasterMock().postCast.mockResolvedValue("Cast posted!");
   });
 
   afterEach(() => {
@@ -218,7 +231,7 @@ describe("defi_farcaster_post — happy path", () => {
 
   it("passes channelId when channel is provided", async () => {
     await defiModule.handle("defi_farcaster_post", { message: "Hello!", channel: "defi" });
-    expect(mockFarcasterInstance.postCast).toHaveBeenCalledWith(
+    expect(getFarcasterMock().postCast).toHaveBeenCalledWith(
       expect.objectContaining({ channelId: "defi" })
     );
   });
@@ -227,7 +240,7 @@ describe("defi_farcaster_post — happy path", () => {
 describe("defi_farcaster_profile — happy path", () => {
   beforeEach(() => {
     process.env.NEYNAR_API_KEY = "test-key";
-    mockFarcasterInstance.accountDetails.mockResolvedValue("FID: 12345");
+    getFarcasterMock().accountDetails.mockResolvedValue("FID: 12345");
   });
 
   afterEach(() => { delete process.env.NEYNAR_API_KEY; });
@@ -244,13 +257,13 @@ describe("defi_farcaster_profile — happy path", () => {
 // ---------------------------------------------------------------------------
 
 describe("defi_across_bridge", () => {
-  afterEach(() => { vi.unstubAllGlobals(); });
+  afterEach(() => { globalThis.fetch = originalFetch; });
 
   it("returns bridge quote on success", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+    globalThis.fetch = mock().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ relayFee: { pct: "0.04" }, estimatedFillTime: 120 }),
-    }));
+    }) as unknown as typeof fetch;
     const result = await defiModule.handle("defi_across_bridge", {
       origin_chain_id: 8453,
       destination_chain_id: 1,
@@ -263,10 +276,10 @@ describe("defi_across_bridge", () => {
   });
 
   it("returns error when Across API returns non-ok status", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+    globalThis.fetch = mock().mockResolvedValue({
       ok: false,
       statusText: "Service Unavailable",
-    }));
+    }) as unknown as typeof fetch;
     const result = await defiModule.handle("defi_across_bridge", {
       origin_chain_id: 8453,
       destination_chain_id: 1,
@@ -278,10 +291,10 @@ describe("defi_across_bridge", () => {
   });
 
   it("includes recipient in output when provided", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+    globalThis.fetch = mock().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({}),
-    }));
+    }) as unknown as typeof fetch;
     const result = await defiModule.handle("defi_across_bridge", {
       origin_chain_id: 8453,
       destination_chain_id: 1,
@@ -298,13 +311,13 @@ describe("defi_across_bridge", () => {
 // ---------------------------------------------------------------------------
 
 describe("bazaar_list", () => {
-  afterEach(() => { vi.unstubAllGlobals(); });
+  afterEach(() => { globalThis.fetch = originalFetch; });
 
   it("returns service list on success", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+    globalThis.fetch = mock().mockResolvedValue({
       ok: true,
       json: () => Promise.resolve([{ name: "GPUBridge", url: "https://api.gpubridge.io" }]),
-    }));
+    }) as unknown as typeof fetch;
     const result = await defiModule.handle("bazaar_list", {});
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toContain("GPUBridge");
@@ -312,21 +325,21 @@ describe("bazaar_list", () => {
 
   it("falls back to root endpoint when /api/services fails", async () => {
     let callCount = 0;
-    vi.stubGlobal("fetch", vi.fn().mockImplementation(() => {
+    globalThis.fetch = mock().mockImplementation(() => {
       callCount++;
       if (callCount === 1) return Promise.resolve({ ok: false, status: 404 });
       return Promise.resolve({
         ok: true,
         json: () => Promise.resolve({ services: ["svc1"] }),
       });
-    }));
+    }) as unknown as typeof fetch;
     const result = await defiModule.handle("bazaar_list", {});
     expect(result.isError).toBeFalsy();
     expect(result.content[0].text).toContain("svc1");
   });
 
   it("returns error when both endpoints fail", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 503 }));
+    globalThis.fetch = mock().mockResolvedValue({ ok: false, status: 503 }) as unknown as typeof fetch;
     const result = await defiModule.handle("bazaar_list", {});
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain("unavailable");

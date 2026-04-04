@@ -5,7 +5,26 @@
  * - Every definition name is routeable through its module's handle
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, mock } from "bun:test";
+
+// ---------------------------------------------------------------------------
+// Mocks needed by walletModule and defiModule at import time
+// ---------------------------------------------------------------------------
+
+mock.module("@coinbase/cdp-sdk", () => ({
+  CdpClient: mock().mockImplementation(() => ({ evm: {} })),
+}));
+
+mock.module("@coinbase/agentkit", () => ({
+  PythActionProvider: mock().mockImplementation(() => ({})),
+  MessariActionProvider: mock().mockImplementation(() => ({})),
+  FarcasterActionProvider: mock().mockImplementation(() => ({})),
+  MorphoActionProvider: mock().mockImplementation(() => ({})),
+  CdpEvmWalletProvider: { configureWithWallet: mock() },
+}));
+
+// ---------------------------------------------------------------------------
+
 import { gpuModule } from "../src/tools/gpu.js";
 import { walletModule } from "../src/tools/wallet.js";
 import { defiModule } from "../src/tools/defi.js";
@@ -13,26 +32,6 @@ import { paymentsModule } from "../src/tools/payments.js";
 import { portfolioModule } from "../src/tools/portfolio.js";
 import { marketModule } from "../src/tools/market.js";
 import { docsModule } from "../src/tools/docs.js";
-
-// ---------------------------------------------------------------------------
-// Mocks needed by walletModule and defiModule at import time
-// ---------------------------------------------------------------------------
-
-import { vi } from "vitest";
-
-vi.mock("@coinbase/cdp-sdk", () => ({
-  CdpClient: vi.fn().mockImplementation(() => ({ evm: {} })),
-}));
-
-vi.mock("@coinbase/agentkit", () => ({
-  PythActionProvider: vi.fn().mockImplementation(() => ({})),
-  MessariActionProvider: vi.fn().mockImplementation(() => ({})),
-  FarcasterActionProvider: vi.fn().mockImplementation(() => ({})),
-  MorphoActionProvider: vi.fn().mockImplementation(() => ({})),
-  CdpEvmWalletProvider: { configureWithWallet: vi.fn() },
-}));
-
-// ---------------------------------------------------------------------------
 
 const ALL_MODULES = [
   gpuModule,

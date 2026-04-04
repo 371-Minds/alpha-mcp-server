@@ -1,16 +1,13 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, afterEach, type Mock } from "bun:test";
+
+// ---------------------------------------------------------------------------
+// child_process.execFile is patched globally by src/test-preload.ts before
+// any module loads.  We grab the pre-installed mock from globalThis here.
+// ---------------------------------------------------------------------------
+
 import { opencliModule } from "./opencli.js";
 
-// ---------------------------------------------------------------------------
-// vi.hoisted — hoist mock variables so they are available inside vi.mock()
-// ---------------------------------------------------------------------------
-const { mockExecFile } = vi.hoisted(() => ({
-  mockExecFile: vi.fn(),
-}));
-
-vi.mock("child_process", () => ({
-  execFile: mockExecFile,
-}));
+const mockExecFile = (globalThis as any).__execFileMock as Mock<(...args: any[]) => any>;
 
 // execFileAsync (promisify wrapper) calls execFile with a callback; we simulate
 // the promisified version by resolving / rejecting according to mockExecFile.
