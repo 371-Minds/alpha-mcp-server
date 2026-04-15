@@ -264,9 +264,11 @@ node dist/server.js
 
 ## Akash Deployment
 
-An example Akash deployment manifest is included at [`akash.yaml`](./akash.yaml). It runs the published npm package in a lightweight Node container and includes commented examples for the environment variables you may want to add.
+An example Akash deployment manifest is included at [`akash.yaml`](./akash.yaml). It runs the published npm package in a lightweight Node container by invoking the packaged `dist/server.js` entrypoint with `node`, so it does not depend on the CLI's Bun shebang, and includes commented examples for the environment variables you may want to add.
 
 Before deploying, add only the credentials you actually need for the tool groups you plan to enable.
+
+> **Important:** this MCP server currently uses a stdio transport, so deploying it to Akash does **not** automatically make it reachable over a public network endpoint. In practice, the Akash deployment is only useful if you pair it with a stdio bridge/sidecar that exposes the server to clients, or if you modify the server to add a network transport such as HTTP or SSE and expose that port in your Akash manifest.
 
 ---
 

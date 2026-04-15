@@ -4,12 +4,13 @@ version: "2.0"
 services:
   alpha-mcp-server:
     # Quick-start manifest: for production, prefer a custom image with the package preinstalled.
+    # This server currently uses stdio transport only; pair it with a bridge/sidecar or add a network transport before exposing it publicly.
     image: node:20-alpine
     command:
       - /bin/sh
       - -lc
     args:
-      - set -e; npm install -g @371-minds/alpha-mcp-server@3.0.0 && alpha-mcp-server
+      - set -e; npm install -g @371-minds/alpha-mcp-server@3.0.0 && PKG_DIR="$(npm root -g)/@371-minds/alpha-mcp-server" && node "$PKG_DIR/dist/server.js"
     env:
       - NODE_ENV=production
       # Add only the credentials needed for the tool groups you plan to enable.
