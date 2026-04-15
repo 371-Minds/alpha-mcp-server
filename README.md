@@ -80,8 +80,12 @@ A full-stack AI co-pilot that gives Claude (and any MCP-compatible AI) direct ac
 }
 ```
 
-**macOS config path:** `~/Library/Application Support/Claude/claude_desktop_config.json`  
-**Windows config path:** `%APPDATA%\Claude\claude_desktop_config.json`
+If you use **Claude Desktop**, save one of the JSON blocks above in:
+
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+If you use **another MCP-compatible client** (for example Cursor, Cline, or Windsurf), copy the same `mcpServers.alpha` entry into that client's MCP/server configuration. The JSON structure is the same; only the config file location and UI differ by client.
 
 ---
 
