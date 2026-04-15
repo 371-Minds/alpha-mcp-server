@@ -1,0 +1,42 @@
+---
+version: "2.0"
+
+services:
+  alpha-mcp-server:
+    # Quick-start manifest: for production, prefer a custom image with the package preinstalled.
+    # This server currently uses stdio transport only; pair it with a bridge/sidecar or add a network transport before exposing it publicly.
+    image: node:20-alpine
+    command:
+      - /bin/sh
+      - -lc
+    args:
+      - set -e; npm install -g @371-minds/alpha-mcp-server@3.0.0 && PKG_DIR="$(npm root -g)/@371-minds/alpha-mcp-server" && node "$PKG_DIR/dist/server.js"
+    env:
+      - NODE_ENV=production
+      # Add only the credentials needed for the tool groups you plan to enable.
+      # Example:
+      # - GPUBRIDGE_API_KEY=your_gpubridge_api_key
+      # - CDP_API_KEY_ID=your_cdp_api_key_id
+      # - CDP_API_KEY_SECRET=your_cdp_api_key_secret
+
+profiles:
+  compute:
+    alpha-mcp-server:
+      resources:
+        cpu:
+          units: 0.25
+        memory:
+          size: 512Mi
+        storage:
+          size: 1Gi
+  placement:
+    akash:
+      pricing:
+        alpha-mcp-server:
+          denom: uakt
+          amount: 100
+
+deployment:
+  alpha-mcp-server:
+    akash:
+      count: 1
