@@ -3,6 +3,7 @@ version: "2.0"
 
 services:
   alpha-mcp-server:
+    # Quick-start manifest: for production, prefer a custom image with the package preinstalled.
     image: node:20-alpine
     command:
       - /bin/sh

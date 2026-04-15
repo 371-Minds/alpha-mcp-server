@@ -4,7 +4,7 @@
 
 - Runtime entrypoint: `dist/server.js`
 - Source: `src/`
-- Build output in `dist/` is committed to the repo
+- Build output in `dist/` is committed to the repo because the published package and CLI entrypoint use it directly
 - Primary package scripts:
   - `npm run build` → TypeScript compile via `tsc`
   - `npm test` → `bun test`
