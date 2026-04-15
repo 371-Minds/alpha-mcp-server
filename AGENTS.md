@@ -26,5 +26,5 @@
 ## Validation
 
 - Run `npm run build` after code changes.
-- Run `npm test` when Bun is available.
+- Install Bun before running `npm test`, since the repository test script is `bun test`.
 - If Bun is unavailable in the environment, note that limitation in your handoff.
