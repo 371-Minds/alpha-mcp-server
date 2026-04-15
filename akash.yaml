@@ -11,13 +11,11 @@ services:
       - npm install -g @371-minds/alpha-mcp-server && alpha-mcp-server
     env:
       - NODE_ENV=production
-      - GPUBRIDGE_API_KEY=REPLACE_IF_USING_GPU_TOOLS
-      - CDP_API_KEY_ID=REPLACE_IF_USING_CDP_TOOLS
-      - CDP_API_KEY_SECRET=REPLACE_IF_USING_CDP_TOOLS
-      - CDP_WALLET_SECRET=REPLACE_IF_USING_CDP_SIGNING
-      - COINBASE_COMMERCE_API_KEY=REPLACE_IF_USING_COMMERCE_TOOLS
-      - COINBASE_ADV_TRADE_API_KEY=REPLACE_IF_USING_MARKET_TOOLS
-      - COINBASE_ADV_TRADE_SECRET=REPLACE_IF_USING_MARKET_TOOLS
+      # Add only the credentials needed for the tool groups you plan to enable.
+      # Example:
+      # - GPUBRIDGE_API_KEY=your_gpubridge_api_key
+      # - CDP_API_KEY_ID=your_cdp_api_key_id
+      # - CDP_API_KEY_SECRET=your_cdp_api_key_secret
 
 profiles:
   compute:

@@ -264,9 +264,9 @@ node dist/server.js
 
 ## Akash Deployment
 
-An example Akash deployment manifest is included at [`akash.yaml`](./akash.yaml). It runs the published npm package in a lightweight Node container and lets you provide the same environment variables documented above.
+An example Akash deployment manifest is included at [`akash.yaml`](./akash.yaml). It runs the published npm package in a lightweight Node container and includes commented examples for the environment variables you may want to add.
 
-Before deploying, set the variables you actually need and remove any empty entries you do not plan to use.
+Before deploying, add only the credentials you actually need for the tool groups you plan to enable.
 
 ---
 
