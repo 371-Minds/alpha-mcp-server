@@ -262,6 +262,12 @@ npm run build
 node dist/server.js
 ```
 
+## Akash Deployment
+
+An example Akash deployment manifest is included at [`akash.yaml`](./akash.yaml). It runs the published npm package in a lightweight Node container and lets you provide the same environment variables documented above.
+
+Before deploying, set the variables you actually need and remove any empty entries you do not plan to use.
+
 ---
 
 ## Architecture
@@ -281,6 +287,12 @@ src/
 ```
 
 Each tool module exports `{ definitions, handle }` and is independently testable.
+
+---
+
+## Contributor Notes
+
+Repository-specific guidance for coding agents and automated contributors lives in [`AGENTS.md`](./AGENTS.md).
 
 ---
 

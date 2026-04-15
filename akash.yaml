@@ -1,0 +1,42 @@
+---
+version: "2.0"
+
+services:
+  alpha-mcp-server:
+    image: node:20-alpine
+    command:
+      - /bin/sh
+      - -lc
+    args:
+      - npm install -g @371-minds/alpha-mcp-server && alpha-mcp-server
+    env:
+      - NODE_ENV=production
+      - GPUBRIDGE_API_KEY=
+      - CDP_API_KEY_ID=
+      - CDP_API_KEY_SECRET=
+      - CDP_WALLET_SECRET=
+      - COINBASE_COMMERCE_API_KEY=
+      - COINBASE_ADV_TRADE_API_KEY=
+      - COINBASE_ADV_TRADE_SECRET=
+
+profiles:
+  compute:
+    alpha-mcp-server:
+      resources:
+        cpu:
+          units: 0.25
+        memory:
+          size: 512Mi
+        storage:
+          size: 1Gi
+  placement:
+    akash:
+      pricing:
+        alpha-mcp-server:
+          denom: uakt
+          amount: 100
+
+deployment:
+  alpha-mcp-server:
+    akash:
+      count: 1
