@@ -9,7 +9,7 @@ services:
       - /bin/sh
       - -lc
     args:
-      - set -e; npm install -g @371-minds/alpha-mcp-server && alpha-mcp-server
+      - set -e; npm install -g @371-minds/alpha-mcp-server@3.0.0 && alpha-mcp-server
     env:
       - NODE_ENV=production
       # Add only the credentials needed for the tool groups you plan to enable.

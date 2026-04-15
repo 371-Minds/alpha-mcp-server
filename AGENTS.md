@@ -7,7 +7,7 @@
 - Build output in `dist/` is committed to the repo because the published package and CLI entrypoint use it directly
 - Primary package scripts:
   - `npm run build` → TypeScript compile via `tsc`
-  - `npm test` → `bun test`
+  - `npm test` → `Bun test`
 
 ## Tooling notes
 
@@ -26,5 +26,5 @@
 ## Validation
 
 - Run `npm run build` after code changes.
-- Install Bun before running `npm test`, since the repository test script is `bun test`.
+- Install Bun before running `npm test`, since the repository test script is `Bun test`.
 - If Bun is unavailable in the environment, note that limitation in your handoff.
